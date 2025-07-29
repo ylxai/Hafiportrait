@@ -25,6 +25,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all events
+  app.get("/api/events", async (req, res) => {
+    console.log("API route /api/events hit");
+    try {
+      const events = await storage.getAllEvents();
+      console.log("Events fetched:", events.length);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ message: "Server error", error });
+    }
+  });
+
   // Get event by ID
   app.get("/api/events/:id", async (req, res) => {
     try {
