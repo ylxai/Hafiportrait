@@ -13,12 +13,14 @@ import type { Event } from "@shared/schema";
 export default function EventsSection() {
   const [, setLocation] = useLocation();
 
-  // Fetch all events
+  // Fetch all events - temporarily disabled due to API route issue
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['/api/events'],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/events");
-      return response.json() as Promise<Event[]>;
+      // Temporarily return empty array until API route is fixed
+      return [] as Event[];
+      // const response = await apiRequest("GET", "/api/events");
+      // return response.json() as Promise<Event[]>;
     },
   });
 
