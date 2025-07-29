@@ -64,7 +64,7 @@ export default function PricingSection() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center space-x-2 bg-rose-gold/10 px-4 py-2 rounded-full mb-4">
             <Heart className="h-5 w-5 text-rose-gold" />
-            <span className="text-rose-gold font-medium">PAKET HARGA</span>
+            <span className="text-rose-gold font-medium text-center">PAKET HARGA</span>
           </div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
