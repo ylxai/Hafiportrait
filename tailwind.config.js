@@ -49,6 +49,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom wedding photography colors
+        "rose-gold": "#E8B4B8",
+        "deep-rose": "#B76E79",
+        "wedding-ivory": "#FEFEFE",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -68,6 +72,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      fontFamily: {
+        "playfair": ["Playfair Display", "serif"],
       },
     },
   },
