@@ -50,8 +50,8 @@ export default function Header() {
 
   return (
     <header className="bg-white/95 backdrop-blur-sm fixed w-full top-0 z-50 border-b border-rose-gold/20 shadow-sm">
-      <div className="w-full px-4 py-3 md:py-4">
-        <nav className="flex items-center justify-between max-w-7xl mx-auto">
+      <div className="w-full px-4 py-3 md:py-4 max-w-7xl mx-auto">
+        <nav className="flex items-center justify-between w-full">
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <Camera className="h-6 w-6 md:h-8 md:w-8 text-rose-gold" />
@@ -115,7 +115,8 @@ export default function Header() {
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-rose-gold p-2 h-12 w-12 min-h-[48px] min-w-[48px]"
+              className="text-rose-gold p-2 h-12 w-12 min-h-[48px] min-w-[48px] touch-manipulation active:scale-95 transition-transform"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -124,12 +125,12 @@ export default function Header() {
 
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden mobile-menu-overlay bg-white/98 backdrop-blur-sm">
-            <div className="mobile-menu-content flex flex-col items-center justify-start px-4 space-y-6">
+          <div className="lg:hidden fixed inset-0 bg-white/98 backdrop-blur-sm z-50 overflow-hidden">
+            <div className="flex flex-col items-center justify-start px-4 space-y-6 h-full pt-20 pb-8 overflow-y-auto">
               {/* Close Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mobile-menu-close"
+                className="absolute top-4 right-4 z-50 min-h-[48px] min-w-[48px] flex items-center justify-center bg-white/90 rounded-full border border-gray-200 shadow-lg touch-manipulation"
                 aria-label="Close menu"
               >
                 <X className="h-6 w-6 text-gray-600" />
@@ -139,25 +140,25 @@ export default function Header() {
               <div className="space-y-4 w-full max-w-sm mt-8">
                 <button
                   onClick={() => scrollToSection('gallery')}
-                  className="mobile-menu-item text-gray-700 hover:text-rose-gold"
+                  className="w-full text-left py-4 px-4 text-gray-700 hover:text-rose-gold hover:bg-gray-50 rounded-lg transition-colors touch-manipulation text-lg font-medium"
                 >
                   Galeri
                 </button>
                 <button
                   onClick={() => scrollToSection('pricing')}
-                  className="mobile-menu-item text-gray-700 hover:text-rose-gold"
+                  className="w-full text-left py-4 px-4 text-gray-700 hover:text-rose-gold hover:bg-gray-50 rounded-lg transition-colors touch-manipulation text-lg font-medium"
                 >
                   Paket Harga
                 </button>
                 <button
                   onClick={() => scrollToSection('events')}
-                  className="mobile-menu-item text-gray-700 hover:text-rose-gold"
+                  className="w-full text-left py-4 px-4 text-gray-700 hover:text-rose-gold hover:bg-gray-50 rounded-lg transition-colors touch-manipulation text-lg font-medium"
                 >
                   Event
                 </button>
                 <button
                   onClick={() => scrollToSection('contact')}
-                  className="mobile-menu-item text-gray-700 hover:text-rose-gold"
+                  className="w-full text-left py-4 px-4 text-gray-700 hover:text-rose-gold hover:bg-gray-50 rounded-lg transition-colors touch-manipulation text-lg font-medium"
                 >
                   Kontak
                 </button>
@@ -171,7 +172,7 @@ export default function Header() {
                     href={item.href}
                     target={item.href.startsWith('http') ? '_blank' : undefined}
                     rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    className={`mobile-menu-item text-gray-700 ${item.className}`}
+                    className={`flex items-center py-3 px-4 text-gray-700 ${item.className} hover:bg-gray-50 rounded-lg transition-colors touch-manipulation`}
                   >
                     <item.icon className="h-5 w-5 mr-3" />
                     <span className="font-medium">{item.label}</span>
@@ -179,7 +180,7 @@ export default function Header() {
                 ))}
                 <Button 
                   variant="outline"
-                  className="w-full mt-4 border-rose-gold text-rose-gold hover:bg-rose-gold hover:text-white py-3 mobile-touch"
+                  className="w-full mt-4 border-rose-gold text-rose-gold hover:bg-rose-gold hover:text-white py-3 touch-manipulation"
                   onClick={() => {
                     setLocation('/admin');
                     setIsMobileMenuOpen(false);
