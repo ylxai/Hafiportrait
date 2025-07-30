@@ -1,3 +1,10 @@
+// Load environment variables directly in db.ts
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load .env file from root directory
+config({ path: path.resolve(process.cwd(), '.env') });
+
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";

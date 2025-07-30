@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,20 +163,40 @@ export default function EventPage() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+    
+    // Use requestIdleCallback untuk menghindari blocking main thread
+    const processFiles = (deadline: IdleDeadline) => {
+      while (deadline.timeRemaining() > 0 && files.length > 0) {
+        const file = files.shift();
+        if (!file) break;
+        
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File Terlalu Besar",
           description: "Ukuran file maksimal 10MB.",
           variant: "destructive",
         });
-        return;
+          continue;
       }
       uploadPhotoMutation.mutate(file);
-    });
+      }
+      
+      // Jika masih ada files, schedule lagi
+      if (files.length > 0) {
+        requestIdleCallback(processFiles);
+      }
   };
 
-  const handleSubmitMessage = () => {
+    // Start processing dengan idle callback
+    if (typeof window.requestIdleCallback !== 'undefined') {
+      requestIdleCallback(processFiles);
+    } else {
+      // Fallback untuk browser yang tidak support requestIdleCallback
+      setTimeout(() => processFiles({ timeRemaining: () => 50, didTimeout: false }), 0);
+    }
+  };
+
+  const handleSubmitMessage = useCallback(() => {
     if (!guestName.trim() || !messageText.trim()) {
       toast({
         title: "Informasi Kurang",
@@ -190,15 +210,15 @@ export default function EventPage() {
       guestName: guestName.trim(),
       message: messageText.trim(),
     });
-  };
+  }, [guestName, messageText, addMessageMutation, toast]);
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Berhasil Disalin!",
       description: "Link telah disalin ke clipboard.",
     });
-  };
+  }, [toast]);
 
   if (eventLoading) {
     return (
@@ -562,7 +582,7 @@ export default function EventPage() {
                         <p className="text-xs text-gray-400 mt-2">
                           {new Date(message.createdAt!).toLocaleDateString('id-ID', {
                             year: 'numeric',
-                            month: 'long',
+                            month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
@@ -593,16 +613,6 @@ export default function EventPage() {
             )}
           </TabsContent>
         </Tabs>
-
-        {/* Info Card */}
-        <Card className="mt-8 p-6 bg-gradient-to-r from-rose-gold/10 to-deep-rose/10">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">Kode Akses: {event.accessCode}</h3>
-            <p className="text-sm text-gray-600">
-              Bagikan kode ini kepada tamu untuk mengupload foto ke album Tamu dan Bridesmaid
-            </p>
-          </div>
-        </Card>
       </div>
 
       {/* Photo Lightbox */}

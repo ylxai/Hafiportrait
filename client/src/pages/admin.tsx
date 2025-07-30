@@ -106,7 +106,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Official photo upload function
+  // Official photo upload function - optimized untuk performance
   const handleOfficialPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!selectedEventForUpload) {
@@ -121,14 +121,19 @@ export default function AdminDashboard() {
     let completed = 0;
     const totalFiles = files.length;
 
-    for (const file of files) {
+    // Process files in chunks untuk menghindari blocking
+    const CHUNK_SIZE = 3;
+    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+      const chunk = files.slice(i, i + CHUNK_SIZE);
+      
+      const promises = chunk.map(async (file) => {
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File Too Large",
           description: `${file.name} exceeds 10MB limit.`,
           variant: "destructive",
         });
-        continue;
+          return false;
       }
 
       try {
@@ -142,12 +147,20 @@ export default function AdminDashboard() {
           body: formData,
         });
 
-        if (response.ok) {
-          completed++;
-          setUploadProgress((completed / totalFiles) * 100);
-        }
+          return response.ok;
       } catch (error) {
         console.error('Upload error:', error);
+          return false;
+        }
+      });
+
+      const results = await Promise.all(promises);
+      completed += results.filter(Boolean).length;
+      setUploadProgress((completed / totalFiles) * 100);
+      
+      // Give UI time to update antara chunks
+      if (i + CHUNK_SIZE < files.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
@@ -303,26 +316,31 @@ export default function AdminDashboard() {
             <Shield className="h-12 w-12 text-rose-gold mx-auto mb-4" />
             <CardTitle className="text-2xl">Admin Login</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
             <Input
               type="text"
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
             />
             <Input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                autoComplete="current-password"
+                required
             />
             <Button 
-              onClick={handleLogin}
+                type="submit"
               className="w-full bg-rose-gold text-white hover:bg-deep-rose"
             >
               Login to Dashboard
             </Button>
+            </form>
           </CardContent>
         </Card>
       </div>

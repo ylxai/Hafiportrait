@@ -2,29 +2,7 @@ import { events, photos, messages, type Event, type InsertEvent, type Photo, typ
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
-
-export interface IStorage {
-  // Events
-  createEvent(event: InsertEvent): Promise<Event>;
-  getEvent(id: string): Promise<Event | undefined>;
-  getEventByShareableLink(link: string): Promise<Event | undefined>;
-  getAllEvents(): Promise<Event[]>;
-  deleteEvent(id: string): Promise<void>;
-  verifyEventAccessCode(eventId: string, accessCode: string): Promise<boolean>;
-
-  // Photos
-  addPhoto(photo: InsertPhoto): Promise<Photo>;
-  getEventPhotos(eventId: string): Promise<Photo[]>;
-  getPhotosByAlbum(eventId: string, albumName: string): Promise<Photo[]>;
-  getTotalPhotosCount(): Promise<number>;
-  updatePhotoLikes(photoId: string, likes: number): Promise<Photo | undefined>;
-
-  // Messages
-  addMessage(message: InsertMessage): Promise<Message>;
-  getEventMessages(eventId: string): Promise<Message[]>;
-  updateMessageHearts(messageId: string, hearts: number): Promise<Message | undefined>;
-  getTotalMessagesCount(): Promise<number>;
-}
+import { IStorage } from './storageInterface';
 
 export class MemStorage implements IStorage {
   private events: Map<string, Event>;
@@ -164,199 +142,33 @@ export class MemStorage implements IStorage {
     const event = this.events.get(eventId);
     return event ? event.accessCode === accessCode : false;
   }
-}
 
-// Database storage implementation
-export class DatabaseStorage implements IStorage {
-  async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const id = randomUUID();
-    const accessCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const shareableLink = `https://wedibox.app/event/${id}`;
-    const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareableLink)}`;
-
-    const eventData = {
-      ...insertEvent,
-      id,
-      qrCode,
-      shareableLink,
-      accessCode,
-      isPremium: insertEvent.isPremium ?? false,
-    };
-
-    const [event] = await db
-      .insert(events)
-      .values(eventData)
-      .returning();
-    return event;
-  }
-
-  async getEvent(id: string): Promise<Event | undefined> {
-    const [event] = await db.select().from(events).where(eq(events.id, id));
-    return event || undefined;
-  }
-
-  async getEventByShareableLink(link: string): Promise<Event | undefined> {
-    const [event] = await db.select().from(events).where(eq(events.shareableLink, link));
-    return event || undefined;
-  }
-
-  async addPhoto(insertPhoto: InsertPhoto): Promise<Photo> {
-    const id = randomUUID();
-    const photoData = {
-      ...insertPhoto,
-      id,
-      albumName: insertPhoto.albumName ?? "Tamu",
-      uploaderName: insertPhoto.uploaderName ?? null,
-      likes: 0,
-    };
-
-    const [photo] = await db
-      .insert(photos)
-      .values(photoData)
-      .returning();
-    return photo;
-  }
-
-  async getEventPhotos(eventId: string): Promise<Photo[]> {
-    return db.select().from(photos)
-      .where(eq(photos.eventId, eventId))
-      .orderBy(desc(photos.uploadedAt));
-  }
-
-  async getPhotosByAlbum(eventId: string, albumName: string): Promise<Photo[]> {
-    return db.select().from(photos)
-      .where(and(eq(photos.eventId, eventId), eq(photos.albumName, albumName)))
-      .orderBy(desc(photos.uploadedAt));
-  }
-
-  async addMessage(insertMessage: InsertMessage): Promise<Message> {
-    const id = randomUUID();
-    const messageData = {
-      ...insertMessage,
-      id,
-      hearts: 0,
-    };
-
-    const [message] = await db
-      .insert(messages)
-      .values(messageData)
-      .returning();
-    return message;
-  }
-
-  async getEventMessages(eventId: string): Promise<Message[]> {
-    return db.select().from(messages)
-      .where(eq(messages.eventId, eventId))
-      .orderBy(desc(messages.createdAt));
-  }
-
-  async updateMessageHearts(messageId: string, hearts: number): Promise<Message | undefined> {
-    const [message] = await db
-      .update(messages)
-      .set({ hearts })
-      .where(eq(messages.id, messageId))
-      .returning();
-    return message || undefined;
-  }
-
+  // Stub implementations for methods that MemStorage doesn't fully implement
   async getRecentPhotos(limit: number = 20): Promise<Photo[]> {
-    return await db
-      .select()
-      .from(photos)
-      .orderBy(desc(photos.createdAt))
-      .limit(limit);
+    return [];
   }
 
   async deletePhoto(photoId: string): Promise<void> {
-    // Delete the file from filesystem
-    const photo = await db.select().from(photos).where(eq(photos.id, photoId)).limit(1);
-    if (photo[0]?.url) {
-      const fs = require('fs');
-      const path = require('path');
-      const filePath = path.join(process.cwd(), 'uploads', path.basename(photo[0].url));
-      try {
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      } catch (error) {
-        console.error('Error deleting file:', error);
-      }
-    }
-
-    // Delete from database
-    await db.delete(photos).where(eq(photos.id, photoId));
+    this.photos.delete(photoId);
   }
 
-  // Admin methods
-  async getAllEvents(): Promise<Event[]> {
-    return db.select().from(events).orderBy(desc(events.createdAt));
-  }
-
-  async deleteEvent(id: string): Promise<void> {
-    // Delete related photos and messages first
-    await db.delete(photos).where(eq(photos.eventId, id));
-    await db.delete(messages).where(eq(messages.eventId, id));
-    await db.delete(events).where(eq(events.id, id));
-  }
-
-  async getTotalPhotosCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` }).from(photos);
-    return result[0]?.count || 0;
-  }
-
-  async getTotalMessagesCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` }).from(messages);
-    return result[0]?.count || 0;
-  }
-
-  async updatePhotoLikes(photoId: string, likes: number): Promise<Photo | undefined> {
-    const [photo] = await db
-      .update(photos)
-      .set({ likes })
-      .where(eq(photos.id, photoId))
-      .returning();
-    return photo || undefined;
-  }
-
-  async verifyEventAccessCode(eventId: string, accessCode: string): Promise<boolean> {
-    const [event] = await db.select().from(events)
-      .where(and(eq(events.id, eventId), eq(events.accessCode, accessCode)));
-    return !!event;
-  }
-
-  async updateMessageHearts(messageId: string, hearts: number): Promise<Message | undefined> {
-    const [message] = await db
-      .update(messages)
-      .set({ hearts })
-      .where(eq(messages.id, messageId))
-      .returning();
-    return message || undefined;
-  }
-
-  // Gallery methods
   async addGalleryPhoto(category: string, photoData: any) {
-    // Store gallery photo in uploads/gallery/{category}/
     return { success: true, photoData };
   }
 
   async getGalleryPhotos(category?: string) {
-    // Return gallery photos by category
     return [];
   }
 
   async deleteGalleryPhoto(photoId: string) {
-    // Delete gallery photo
     return { success: true };
   }
 
-  // Pricing methods
   async updatePricing(pricingData: any) {
-    // Store pricing in database or file
     return { success: true, pricingData };
   }
 
   async getPricing() {
-    // Get current pricing
     return {
       basic: { price: "5000000", description: "4 jam liputan, 100 foto edit, USB flashdisk, online gallery" },
       premium: { price: "8000000", description: "8 jam liputan, 200 foto edit, album cetak, USB flashdisk, online gallery, video highlight" },
@@ -365,26 +177,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async uploadPricingPDF(pdfData: any) {
-    // Store PDF file
     return { success: true, pdfData };
   }
 
   async getAdminStats() {
-    const totalEvents = await this.getAllEvents().then(events => events.length);
-    const totalPhotos = await this.getTotalPhotosCount();
-    const totalMessages = await this.getTotalMessagesCount();
-    const activeEvents = await this.getAllEvents().then(events => 
-      events.filter(event => new Date(event.date) >= new Date()).length
-    );
-
     return {
-      totalEvents,
-      totalPhotos,
-      totalMessages,
-      activeEvents,
-      storageUsed: "2.4 GB"
+      totalEvents: this.events.size,
+      totalPhotos: this.photos.size,
+      totalMessages: this.messages.size,
+      activeEvents: Array.from(this.events.values()).filter(event => new Date(event.date) >= new Date()).length,
+      storageUsed: "0 KB"
     };
   }
 }
 
-export const storage = new DatabaseStorage();
+// Database storage implementation
+import { DatabaseStorage } from './databaseStorage';
+
+// Use SupabaseStorage instead of DatabaseStorage
+// Import the actual implementation from separate file to avoid circular dependency
+import { SupabaseStorage } from './supabaseStorage';
+export const storage = new SupabaseStorage();

@@ -1,5 +1,5 @@
 
-import { Phone, Instagram, MapPin, Clock, Mail, MessageCircle } from "lucide-react";
+import { Phone, AtSign, MapPin, Clock, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -16,9 +16,9 @@ export default function ContactSection() {
       hoverColor: "hover:bg-green-100"
     },
     {
-      icon: Instagram,
+      icon: AtSign,
       title: "Instagram",
-      content: "@hafiportrait",
+      content: "Hafiportrait",
       href: "https://instagram.com/hafiportrait",
       description: "Lihat portfolio terbaru kami",
       color: "text-pink-600",

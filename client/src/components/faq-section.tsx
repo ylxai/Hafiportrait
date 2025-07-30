@@ -10,7 +10,7 @@ const faqs = [
   },
   {
     question: "Do guests need to download an app?",
-    answer: "No! Wedibox works directly in any web browser. Guests simply scan your QR code or click your link to access the album and start uploading photos immediately."
+    answer: "No! Hafiportrait works directly in any web browser. Guests simply scan your QR code or click your link to access the album and start uploading photos immediately."
   },
   {
     question: "What's the difference between Free and Premium?",
@@ -45,7 +45,7 @@ export default function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-xl text-gray-600">
-            Everything you need to know about Wedibox
+            Everything you need to know about Hafiportrait
           </p>
         </div>
 
@@ -80,3 +80,4 @@ export default function FAQSection() {
     </section>
   );
 }
+  

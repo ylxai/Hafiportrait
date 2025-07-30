@@ -1,4 +1,4 @@
-import { Heart, Camera, Phone, Instagram, Mail, MapPin } from "lucide-react";
+import { Heart, Camera, Phone, AtSign, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -63,8 +63,8 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="flex items-center space-x-3 text-gray-400 hover:text-rose-gold transition-colors"
               >
-                <Instagram className="h-5 w-5" />
-                <span>@hafiportrait</span>
+                <AtSign className="h-5 w-5" />
+                <span>Hafiportrait</span>
               </a>
 
               <a 
@@ -72,12 +72,12 @@ export default function Footer() {
                 className="flex items-center space-x-3 text-gray-400 hover:text-rose-gold transition-colors"
               >
                 <Mail className="h-5 w-5" />
-                <span>info@hafiportrait.com</span>
+                <span>hafipotret@gmail.com</span>
               </a>
 
               <div className="flex items-start space-x-3 text-gray-400">
                 <MapPin className="h-5 w-5 mt-1 flex-shrink-0" />
-                <span>Jakarta, Indonesia</span>
+                <span>Jl. Syekh M. Arsyad Al-Banjary, Kelampaian Tengah</span>
               </div>
             </div>
           </div>

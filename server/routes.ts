@@ -5,9 +5,11 @@ import { storage } from "./storage";
 import { insertEventSchema, insertPhotoSchema, insertMessageSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
+import { randomUUID } from "crypto";
 
+// Upload middleware - menggunakan memory storage karena file langsung ke Supabase
 const upload = multer({ 
-  dest: 'uploads/',
+  storage: multer.memoryStorage(), // Store dalam memory, tidak perlu file sementara
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
@@ -43,17 +45,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      const filename = `${randomUUID()}${path.extname(req.file.originalname)}`;
+      
+      // Menggunakan buffer langsung dari memory storage
+      const fileBuffer = req.file.buffer;
+      
+      // Membuat data foto dengan URL temporer
+      // URL akan diperbarui di dalam metode addPhoto
       const photoData = {
         eventId: req.params.eventId,
-        filename: req.file.filename,
+        filename: filename,
         originalName: req.file.originalname,
-        url: `/uploads/${req.file.filename}`,
+        url: `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`, // Base64 data untuk diupload ke Supabase
         uploaderName: req.body.uploaderName || "Anonymous",
         albumName: req.body.albumName || "Main",
       };
 
       const validatedData = insertPhotoSchema.parse(photoData);
       const photo = await storage.addPhoto(validatedData);
+      
+      // Tidak perlu hapus file karena menggunakan memory storage
+      
       res.json(photo);
     } catch (error) {
       res.status(400).json({ message: "Failed to upload photo", error });
@@ -147,13 +159,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gallery routes
-  app.post("/api/admin/gallery", async (req, res) => {
+  app.post("/api/admin/gallery", upload.single('photo'), async (req, res) => {
     try {
-      const { category, photoData } = req.body;
+      console.log('Gallery upload request received:', {
+        hasFile: !!req.file,
+        body: req.body,
+        file: req.file ? {
+          fieldname: req.file.fieldname,
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        } : null
+      });
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const filename = `gallery_${randomUUID()}${path.extname(req.file.originalname)}`;
+      
+      // Menggunakan buffer langsung dari memory storage
+      const fileBuffer = req.file.buffer;
+      
+      // Buat data foto untuk gallery
+      const photoData = {
+        filename: filename,
+        originalName: req.file.originalname,
+        url: `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`, // Base64 data untuk diupload ke Supabase
+      };
+
+      const category = req.body.category || "Gallery";
+      console.log('Calling storage.addGalleryPhoto with category:', category);
+      
       const result = await storage.addGalleryPhoto(category, photoData);
+      console.log('Storage result:', result);
+      
+      // Tidak perlu hapus file karena menggunakan memory storage
+      
       res.json(result);
     } catch (error) {
-      res.status(500).json({ message: "Server error", error });
+      console.error('Gallery upload error:', error);
+      res.status(500).json({ 
+        message: "Server error", 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   });
 
@@ -201,9 +251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await storage.uploadPricingPDF({
-        filename: req.file.filename,
+        filename: `pricing_${randomUUID()}${path.extname(req.file.originalname)}`,
         originalName: req.file.originalname,
-        path: req.file.path,
+        buffer: req.file.buffer, // Menggunakan buffer dari memory storage
         size: req.file.size
       });
 
@@ -261,8 +311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files
-  app.use('/uploads', express.static('uploads'));
+  // Serve uploaded files - tidak lagi diperlukan, semua file akan diambil dari Supabase
+  // app.use('/uploads', express.static('uploads'));
 
   const httpServer = createServer(app);
   return httpServer;
