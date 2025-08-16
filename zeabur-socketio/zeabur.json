@@ -1,0 +1,16 @@
+{
+  "name": "hafiportrait-socketio",
+  "services": [
+    {
+      "name": "socketio-server",
+      "buildCommand": "npm install",
+      "startCommand": "npm start",
+      "environment": "nodejs",
+      "port": 8080,
+      "healthCheck": {
+        "path": "/health",
+        "port": 8080
+      }
+    }
+  ]
+}

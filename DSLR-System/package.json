@@ -1,0 +1,38 @@
+{
+  "name": "dslr-auto-upload-system",
+  "version": "1.0.0",
+  "description": "DSLR Auto Upload System with Hybrid Event Management",
+  "main": "Core/dslr-auto-upload-service.js",
+  "scripts": {
+    "start": "node Core/dslr-auto-upload-service.js",
+    "cli": "node Core/dslr-hybrid-cli.js",
+    "test": "node Testing/test-cloudflare-r2-connection.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "@supabase/supabase-js": "^2.55.0",
+    "chokidar": "^3.6.0",
+    "dotenv": "^17.2.1",
+    "form-data": "^4.0.4",
+    "googleapis": "^155.0.1",
+    "node-fetch": "^2.7.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "dslr",
+    "photography",
+    "auto-upload",
+    "nikon",
+    "supabase"
+  ],
+  "author": "HafiPortrait",
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+{
+  "eventId": "test-wedding-sample-2025-01-20",
+  "id": "test-wedding-sample-2025-01-20",
+  "name": "Test Wedding Sample",
+  "date": "2025-01-20",
+  "photographer": "Official Photographer",
+  "album": "Official",
+  "accessCode": "RRUMEP",
+  "shareableLink": "https://hafiportrait.photography/event/test-wedding-sample-2025-01-20",
+  "qrCodeData": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://hafiportrait.photography/event/test-wedding-sample-2025-01-20",
+  "apiUrl": "https://hafiportrait.photography",
+  "watermarkEnabled": true,
+  "backupEnabled": true,
+  "syncStatus": "pending",
+  "createdVia": "hybrid-cli",
+  "created": "2025-08-08T11:20:35.823Z",
+  "updated": "2025-08-08T11:20:36.085Z",
+  "activatedAt": "2025-08-08T11:20:36.085Z"
+}

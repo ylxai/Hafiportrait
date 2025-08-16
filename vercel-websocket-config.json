@@ -1,0 +1,23 @@
+{
+  "development": {
+    "NEXT_PUBLIC_WS_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_SOCKETIO_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_USE_SOCKETIO": "true",
+    "NEXT_PUBLIC_ENABLE_FALLBACK": "true",
+    "NEXT_PUBLIC_POLLING_ENABLED": "true"
+  },
+  "preview": {
+    "NEXT_PUBLIC_WS_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_SOCKETIO_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_USE_SOCKETIO": "true",
+    "NEXT_PUBLIC_ENABLE_FALLBACK": "true",
+    "NEXT_PUBLIC_POLLING_ENABLED": "true"
+  },
+  "production": {
+    "NEXT_PUBLIC_WS_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_SOCKETIO_URL": "https://xcyrexmwrwjq.ap-southeast-1.clawcloudrun.com",
+    "NEXT_PUBLIC_USE_SOCKETIO": "true",
+    "NEXT_PUBLIC_ENABLE_FALLBACK": "true",
+    "NEXT_PUBLIC_POLLING_ENABLED": "true"
+  }
+}

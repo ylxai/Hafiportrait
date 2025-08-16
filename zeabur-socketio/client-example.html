@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HafiPortrait Socket.IO Test Client</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .message {
+            background-color: #e2e3e5;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 HafiPortrait Socket.IO Test Client</h1>
+        
+        <div class="controls">
+            <label>Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:8080" placeholder="Server URL">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+
+        <div class="controls">
+            <label>Event ID:</label>
+            <input type="text" id="eventId" value="test-event-123" placeholder="Event ID">
+            <button onclick="joinEvent()">Join Event</button>
+            <button onclick="leaveEvent()">Leave Event</button>
+        </div>
+
+        <div class="controls">
+            <label>Test Actions:</label>
+            <button onclick="sendHeartbeat()">Send Heartbeat</button>
+            <button onclick="sendTestPhoto()">Test Photo Upload</button>
+            <button onclick="sendTestMessage()">Test Message</button>
+            <button onclick="sendTestNotification()">Test Notification (API)</button>
+        </div>
+
+        <h3>📝 Messages Log</h3>
+        <div id="messages" style="height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background-color: #f8f9fa;">
+        </div>
+
+        <button onclick="clearMessages()" style="margin-top: 10px;">Clear Messages</button>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+
+        function log(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+        }
+
+        function updateStatus(connected) {
+            isConnected = connected;
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = '✅ Connected';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '❌ Disconnected';
+            }
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            if (socket) {
+                socket.disconnect();
+            }
+
+            log(`Connecting to ${serverUrl}...`);
+            
+            socket = io(serverUrl, {
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                log('Connected successfully!', 'success');
+                updateStatus(true);
+            });
+
+            socket.on('disconnect', (reason) => {
+                log(`Disconnected: ${reason}`, 'warning');
+                updateStatus(false);
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`Connection error: ${error.message}`, 'error');
+                updateStatus(false);
+            });
+
+            socket.on('connected', (data) => {
+                log(`Server welcome: ${JSON.stringify(data)}`, 'info');
+            });
+
+            socket.on('new-photo', (data) => {
+                log(`📸 New photo: ${JSON.stringify(data)}`, 'event');
+            });
+
+            socket.on('new-message', (data) => {
+                log(`💬 New message: ${JSON.stringify(data)}`, 'event');
+            });
+
+            socket.on('user-joined', (data) => {
+                log(`👋 User joined: ${JSON.stringify(data)}`, 'event');
+            });
+
+            socket.on('user-left', (data) => {
+                log(`👋 User left: ${JSON.stringify(data)}`, 'event');
+            });
+
+            socket.on('event-status-changed', (data) => {
+                log(`📊 Event status changed: ${JSON.stringify(data)}`, 'event');
+            });
+
+            socket.on('heartbeat-ack', (data) => {
+                log(`💓 Heartbeat acknowledged: ${JSON.stringify(data)}`, 'info');
+            });
+
+            socket.on('test-notification', (data) => {
+                log(`🔔 Test notification: ${JSON.stringify(data)}`, 'event');
+            });
+
+            // Catch all other events
+            socket.onAny((eventName, ...args) => {
+                if (!['connect', 'disconnect', 'connect_error', 'connected', 'new-photo', 'new-message', 'user-joined', 'user-left', 'event-status-changed', 'heartbeat-ack', 'test-notification'].includes(eventName)) {
+                    log(`🔔 Event '${eventName}': ${JSON.stringify(args)}`, 'event');
+                }
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('Disconnected manually', 'info');
+                updateStatus(false);
+            }
+        }
+
+        function joinEvent() {
+            if (!socket || !isConnected) {
+                log('Not connected to server', 'error');
+                return;
+            }
+
+            const eventId = document.getElementById('eventId').value;
+            socket.emit('join-event', eventId);
+            log(`Joining event: ${eventId}`, 'action');
+        }
+
+        function leaveEvent() {
+            if (!socket || !isConnected) {
+                log('Not connected to server', 'error');
+                return;
+            }
+
+            const eventId = document.getElementById('eventId').value;
+            socket.emit('leave-event', eventId);
+            log(`Leaving event: ${eventId}`, 'action');
+        }
+
+        function sendHeartbeat() {
+            if (!socket || !isConnected) {
+                log('Not connected to server', 'error');
+                return;
+            }
+
+            socket.emit('heartbeat');
+            log('Heartbeat sent', 'action');
+        }
+
+        function sendTestPhoto() {
+            if (!socket || !isConnected) {
+                log('Not connected to server', 'error');
+                return;
+            }
+
+            const eventId = document.getElementById('eventId').value;
+            const photoData = {
+                photoId: 'test-photo-' + Date.now(),
+                photoUrl: 'https://example.com/photo.jpg',
+                uploadedBy: 'test-user'
+            };
+
+            socket.emit('photo-uploaded', { eventId, photoData });
+            log(`Test photo uploaded to event ${eventId}`, 'action');
+        }
+
+        function sendTestMessage() {
+            if (!socket || !isConnected) {
+                log('Not connected to server', 'error');
+                return;
+            }
+
+            const eventId = document.getElementById('eventId').value;
+            const messageData = {
+                messageId: 'test-message-' + Date.now(),
+                message: 'Hello from test client!',
+                author: 'Test User'
+            };
+
+            socket.emit('message-sent', { eventId, messageData });
+            log(`Test message sent to event ${eventId}`, 'action');
+        }
+
+        async function sendTestNotification() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            try {
+                const response = await fetch(`${serverUrl}/api/notify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'test-notification',
+                        data: {
+                            message: 'Test notification from HTML client',
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    log('Test notification sent via API', 'action');
+                } else {
+                    log('Failed to send notification via API', 'error');
+                }
+            } catch (error) {
+                log(`API error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            log('Test client loaded. Click Connect to start testing.', 'info');
+        };
+    </script>
+</body>
+</html>
