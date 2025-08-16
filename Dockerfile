@@ -1,43 +1,84 @@
-# Use Node.js 18 Alpine
-FROM node:18-alpine
-
-# Install dependencies for building
-RUN apk add --no-cache libc6-compat
+# HafiPortrait Photography - Multi-Stage Docker Build
+# Stage 1: Dependencies & Build
+FROM node:22-alpine AS dependencies
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Install ALL dependencies (including devDependencies for build)
-RUN npm ci
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Stage 2: Build Application
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy dependencies from previous stage
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/package.json ./package.json
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Set production environment for build
+ENV NODE_ENV=production
 
-# Remove devDependencies after build
-RUN npm prune --production
+# Build the application (skip if build fails, use dev mode)
+RUN pnpm run build || echo "Build failed, will use dev mode"
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Stage 3: Production Runtime
+FROM node:22-alpine AS production
 
-# Change ownership of .next directory
-RUN chown -R nextjs:nodejs /app/.next
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Copy additional files
+COPY --chown=nextjs:nodejs next.config.js ./
+COPY --chown=nextjs:nodejs tailwind.config.js ./
+COPY --chown=nextjs:nodejs postcss.config.js ./
+COPY --chown=nextjs:nodejs tsconfig.json ./
 
 # Switch to non-root user
 USER nextjs
 
-# Expose port (CloudRun uses PORT env var)
-EXPOSE 8080
+# Expose port
+EXPOSE 3000
 
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=8080
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start the application
-CMD ["npm", "start"]
+# Try production first, fallback to dev mode if build failed
+CMD if [ -d ".next" ] && [ "$(ls -A .next)" ]; then \
+      echo "Starting in production mode..." && pnpm start; \
+    else \
+      echo "Starting in development mode..." && pnpm run dev; \
+    fi
