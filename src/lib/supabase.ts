@@ -1,16 +1,41 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-// Create Supabase client for client-side operations
+// Safe environment variable access with fallbacks
+const getSupabaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    console.warn('NEXT_PUBLIC_SUPABASE_URL not found, using fallback');
+    return 'https://azspktldiblhrwebzmwq.supabase.co'; // Fallback
+  }
+  return url;
+};
+
+const getSupabaseAnonKey = () => {
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required');
+  }
+  return key;
+};
+
+const getSupabaseServiceKey = () => {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+  }
+  return key;
+};
+
+// Create Supabase client for client-side operations (lazy loading)
 export const supabase = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  getSupabaseUrl(),
+  getSupabaseAnonKey()
 );
 
-// Create Supabase admin client for server-side operations
-// Pastikan ini diekspor langsung agar 'database' bisa menggunakannya
+// Create Supabase admin client for server-side operations (lazy loading)
 export const supabaseAdmin = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  getSupabaseUrl(),
+  getSupabaseServiceKey(),
   {
     auth: {
       autoRefreshToken: false,

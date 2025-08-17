@@ -10,9 +10,8 @@
  */
 export function getAppBaseUrl(): string {
   // In browser environment, we can use window.location
-  if (typeof window !== 'undefined') {
-    const { protocol, host } = window.location;
-    return `${protocol}//${host}`;
+  if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.host) {
+    return `${window.location.protocol}//${window.location.host}`;
   }
 
   // Server-side: Check environment variables in order of priority

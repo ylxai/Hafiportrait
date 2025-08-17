@@ -335,7 +335,7 @@ class EnvironmentDetector {
       GOOGLE_DRIVE_SHARED_FOLDER: 'false',
 
       // Local Storage Configuration
-      LOCAL_BACKUP_PATH: './DSLR-System/Backup/dslr-backup',
+      LOCAL_BACKUP_PATH: '~/photos',
 
       // Smart Storage Settings
       SMART_STORAGE_ENABLED: 'true',

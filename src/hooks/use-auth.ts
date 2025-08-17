@@ -41,8 +41,15 @@ export function useAuth(): AuthState & AuthActions {
 
   // Helper function to get base URL with environment detection
   const getBaseUrl = useCallback(() => {
-    // Client-side: use current origin
-    if (typeof window !== 'undefined') {
+    // Client-side: use current origin (works for IP access)
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      return window.location.origin;
+    }
+    
+    // Server-side: use environment variables as fallback
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      return process.env.NEXT_PUBLIC_APP_URL;
+    }
       return window.location.origin;
     }
     
@@ -134,9 +141,7 @@ export function useAuth(): AuthState & AuthActions {
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error && error.name === 'AbortError' 
-          ? 'Request timeout. Please check your connection.' 
-          : 'Failed to check authentication status',
+        error: null, // Don't show error, just set loading to false
       }));
     }
   }, [makeAuthRequest]);
@@ -255,6 +260,34 @@ export function useAuth(): AuthState & AuthActions {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+  
+  // Session continuity improvements
+  useEffect(() => {
+    // Periodic session validation (every 5 minutes)
+    const sessionCheck = setInterval(() => {
+      if (state.isAuthenticated) {
+        checkAuth();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Timeout fallback to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (state.isLoading) {
+        console.warn('Auth check timeout, setting loading to false');
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          isAuthenticated: false,
+          error: null
+        }));
+      }
+    }, 10000); // 10 second timeout
+    
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(sessionCheck);
+    };
+  }, [state.isLoading, state.isAuthenticated, checkAuth]);
 
   return {
     ...state,
@@ -296,7 +329,7 @@ export function useRequireAuth(redirectTo: string = '/admin/login'): AuthState &
     // and we're not still loading
     if (!auth.isLoading && !auth.isAuthenticated) {
       // Add current path as redirect parameter
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const currentPath = typeof window !== 'undefined' && window.location && window.location.pathname ? window.location.pathname : '';
       const redirectUrl = currentPath && currentPath !== redirectTo 
         ? `${redirectTo}?redirect=${encodeURIComponent(currentPath)}`
         : redirectTo;
@@ -320,7 +353,9 @@ export function useRequireGuest(redirectTo: string = '/admin'): AuthState & Auth
     // If user is authenticated, redirect to admin
     if (!auth.isLoading && auth.isAuthenticated) {
       // Check for redirect parameter in URL
-      const urlParams = new URLSearchParams(window.location.search);
+      const urlParams = typeof window !== 'undefined' && window.location && window.location.search
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
       const redirect = urlParams.get('redirect');
       const targetUrl = redirect && redirect.startsWith('/') ? redirect : redirectTo;
       

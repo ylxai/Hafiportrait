@@ -16,9 +16,21 @@ const server = createServer(app);
 // CORS configuration untuk development dan production
 const corsOptions = {
   origin: [
+    // Development ports
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://147.251.255.227:3000',
+    'http://localhost:3002',
+    'http://147.251.255.227:3002',
+    
+    // Production ports
+    'http://localhost:4000',
+    'http://127.0.0.1:4000',
+    'http://147.251.255.227:4000',
+    'http://localhost:4002',
+    'http://147.251.255.227:4002',
+    
+    // Production domains
     'https://hafiportrait.photography',
     'https://hafiportrait-staging.vercel.app',
     '*' // Allow all untuk development

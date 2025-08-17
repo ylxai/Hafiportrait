@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+// DISABLED AUTO-DETECT ENV - Manual mode only  
+console.log('🚀 Production environment setup disabled - using manual .env.local');
+console.log('✅ Using existing .env.local file');
+process.exit(0);
+
 /**
  * Setup Production Environment
  * Auto-configure untuk Vercel production dengan domain custom
@@ -115,7 +120,7 @@ SMART_STORAGE_COMPRESSION_QUALITY=${config.SMART_STORAGE_COMPRESSION_QUALITY}
 # SOCKET.IO EXTERNAL INTEGRATION
 # ===================================
 NEXT_PUBLIC_USE_SOCKETIO=true
-NEXT_PUBLIC_SOCKETIO_URL=https://wbs.zeabur.app
+NEXT_PUBLIC_SOCKETIO_URL=http://147.251.255.227:4001
 
 # Real-time Features
 ENABLE_WEBSOCKET=true

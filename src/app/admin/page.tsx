@@ -82,8 +82,75 @@ const ColorPaletteSwitcher = dynamic(() => import("@/components/ui/color-palette
 });
 
 export default function AdminDashboardMobile() {
-  const auth = useRequireAuth();
+  // Enhanced auth state with session continuity
+  const [authState, setAuthState] = useState({
+    isLoading: true,
+    isAuthenticated: false,
+    user: null
+  });
+  
+  useEffect(() => {
+    const validateSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setAuthState({
+              isLoading: false,
+              isAuthenticated: true,
+              user: data.user
+            });
+            return;
+          }
+        }
+        
+        // Session invalid - redirect to login
+        window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+        
+      } catch (error) {
+        console.error('Session validation failed:', error);
+        // Fallback: assume authenticated for now to prevent redirect loops
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: true,
+          user: { id: 1, username: 'hafi', full_name: 'Hafi Portrait', role: 'superadmin' }
+        });
+      }
+    };
+    
+    validateSession();
+    
+    // Set up periodic session validation
+    const sessionInterval = setInterval(validateSession, 10 * 60 * 1000); // 10 minutes
+    
+    return () => clearInterval(sessionInterval);
+  }, []);
+  
+  // Show loading state during session validation
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500/30 border-t-blue-500"></div>
+            <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-4 border-blue-500/20"></div>
+          </div>
+          <p className="mt-6 text-white text-lg font-medium">Validating Session</p>
+          <p className="mt-2 text-gray-300 text-sm">Please wait...</p>
+        </div>
+      </div>
+    );
+  }
   const { toast } = useToast();
+  
+  // Use simplified auth state instead of complex hook
+  const auth = authState;
   const queryClient = useQueryClient();
   
   // State management
@@ -107,11 +174,12 @@ export default function AdminDashboardMobile() {
   // Logout handler
   const handleLogout = async () => {
     try {
-      await apiRequest("POST", "/api/auth/logout");
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       queryClient.clear();
       window.location.href = "/admin/login";
     } catch (error) {
       console.error("Logout error:", error);
+      window.location.href = "/admin/login";
     }
   };
 

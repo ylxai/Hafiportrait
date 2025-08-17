@@ -1,4 +1,4 @@
-import { supabaseAdmin } from './supabase'; // Pastikan ini diimpor dengan benar
+import { supabaseAdmin } from './supabase'; // Remove .ts extension
 import { ImageOptimizerServer } from './image-optimizer-server';
 
 // Definisi Tipe Data untuk konsistensi
@@ -138,8 +138,9 @@ class DatabaseService {
     
     try {
       // Generate QR code and shareable link using centralized config
-      const { generateEventUrl } = await import('@/lib/app-config');
-      const eventUrl = generateEventUrl(newEvent.id, newEvent.access_code!);
+      // Generate event URL server-side without importing client code
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const eventUrl = `${baseUrl}/event/${newEvent.id}?code=${newEvent.access_code}`;
       
       // Generate QR code using a service like QRServer.com
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(eventUrl)}`;

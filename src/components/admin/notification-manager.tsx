@@ -360,7 +360,11 @@ export default function NotificationManager() {
                 <span className="hidden xs:inline">Test</span>
               </Button>
               <Button 
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
                 size="sm"
                 title="Refresh data"
                 className="flex-shrink-0"

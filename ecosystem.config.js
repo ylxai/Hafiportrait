@@ -14,7 +14,7 @@ module.exports = {
       },
       env_production: {
         NODE_ENV: 'production',
-        SOCKETIO_PORT: 3001,
+        SOCKETIO_PORT: 4001,
         HOST: '0.0.0.0'
       },
       log_file: './logs/socketio-combined.log',
@@ -33,9 +33,10 @@ module.exports = {
       max_memory_restart: '2G',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 4000,
         HOST: '0.0.0.0'
       },
+      env_file: '.env.local',
       log_file: './logs/web-combined.log',
       out_file: './logs/web-out.log',
       error_file: './logs/web-error.log',

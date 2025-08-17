@@ -31,7 +31,9 @@ export const useSocketIO = (): boolean => {
   const localStorageFlag = localStorage.getItem('use-socketio') === 'true';
   
   // Check URL parameter override (for testing)
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = typeof window !== 'undefined' 
+    ? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams())
+    : new URLSearchParams();
   const urlFlag = urlParams.get('socketio') === 'true';
   
   return urlFlag || localStorageFlag || envFlag;
@@ -150,7 +152,7 @@ export const realtimeUtils = {
   enableSocketIO: () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('use-socketio', 'true');
-      window.location.reload();
+      if (typeof window !== 'undefined') window.location.reload();
     }
   },
   
@@ -158,7 +160,7 @@ export const realtimeUtils = {
   enableWebSocket: () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('use-socketio', 'false');
-      window.location.reload();
+      if (typeof window !== 'undefined') window.location.reload();
     }
   },
   
@@ -166,7 +168,7 @@ export const realtimeUtils = {
   clearOverride: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('use-socketio');
-      window.location.reload();
+      if (typeof window !== 'undefined') window.location.reload();
     }
   },
   

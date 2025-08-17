@@ -131,7 +131,7 @@ GOOGLE_DRIVE_FOLDER_ID=${folderId || 'root'}`;
     // Local Storage Config
     const localConfig = `
 # Local Storage Configuration (Tier 3)
-LOCAL_BACKUP_PATH=./DSLR-System/Backup/dslr-backup`;
+LOCAL_BACKUP_PATH=~/photos`;
 
     // Combine all configs
     const cloudStorageConfig = `

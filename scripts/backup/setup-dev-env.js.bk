@@ -1,10 +1,5 @@
 #!/usr/bin/env node
 
-// DISABLED AUTO-DETECT ENV - Manual mode only
-console.log('🔧 Development environment setup disabled - using manual .env.local');
-console.log('✅ Using existing .env.local file');
-process.exit(0);
-
 /**
  * Setup Development Environment
  * Auto-configure untuk VPS CloudRun development

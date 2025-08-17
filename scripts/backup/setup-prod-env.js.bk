@@ -1,42 +1,41 @@
 #!/usr/bin/env node
 
-// DISABLED AUTO-DETECT ENV - Manual mode only
-console.log('🔧 Development environment setup disabled - using manual .env.local');
-console.log('✅ Using existing .env.local file');
-process.exit(0);
-
 /**
- * Setup Development Environment
- * Auto-configure untuk VPS CloudRun development
+ * Setup Production Environment
+ * Auto-configure untuk Vercel production dengan domain custom
  */
 
 const fs = require('fs');
 const path = require('path');
 const EnvironmentDetector = require('./env-detector');
 
-async function setupDevelopmentEnvironment() {
-  console.log('🔧 Setting up Development Environment...');
-  console.log('🎯 Target: Development Server (0.0.0.0:3000 - All Interfaces)');
+async function setupProductionEnvironment() {
+  console.log('🚀 Setting up Production Environment...');
+  console.log('🎯 Target: Vercel dengan domain hafiportrait.photography');
   console.log('');
 
   const detector = new EnvironmentDetector();
-  const config = detector.getEnvironmentConfig('development');
+  const config = detector.getEnvironmentConfig('production');
 
   // Display environment info
-  detector.displayEnvironmentInfo('development');
+  detector.displayEnvironmentInfo('production');
 
   // Backup existing .env.local if exists
   await backupExistingEnv();
 
-  // Generate .env.local for development
+  // Generate .env.local for production
   await generateEnvFile(config);
+
+  // Generate .env.production for Vercel
+  await generateVercelEnvFile(config);
 
   // Validate configuration
   await validateConfiguration(config);
 
-  console.log('\n✅ Development environment setup complete!');
-  console.log('🚀 Ready to run: npm run dev');
-  console.log(`📱 Access at: ${config.NEXT_PUBLIC_APP_URL}`);
+  console.log('\n✅ Production environment setup complete!');
+  console.log('🚀 Ready for: npm run build && npm start');
+  console.log(`🌐 Production URL: ${config.NEXT_PUBLIC_APP_URL}`);
+  console.log('📦 Vercel deployment ready');
 }
 
 async function backupExistingEnv() {
@@ -52,11 +51,11 @@ async function backupExistingEnv() {
 }
 
 async function generateEnvFile(config) {
-  console.log('📝 Generating .env.local for development...');
+  console.log('📝 Generating .env.local for production...');
 
-  const envContent = `# Auto-generated Development Environment
+  const envContent = `# Auto-generated Production Environment
 # Generated at: ${new Date().toISOString()}
-# Target: Development Server (0.0.0.0:3000 - All Interfaces)
+# Target: Vercel Production (hafiportrait.photography)
 
 # Environment Configuration
 NODE_ENV=${config.NODE_ENV}
@@ -71,24 +70,13 @@ SUPABASE_SERVICE_ROLE_KEY=${config.SUPABASE_SERVICE_ROLE_KEY}
 # Authentication
 JWT_SECRET=${config.JWT_SECRET}
 
-# Development Specific
-PORT=3000
-HOST=0.0.0.0
+# Production Optimizations
 NEXT_TELEMETRY_DISABLED=1
+NEXT_PRIVATE_STANDALONE=true
 
-# Development Tools
-NEXT_PUBLIC_DEBUG_MODE=true
-NEXT_PUBLIC_SHOW_ENV_INFO=true
-
-# Development CORS & Security (Allow All Origins)
-CORS_ORIGIN=*
-ALLOWED_ORIGINS=*
-NEXT_PUBLIC_ALLOW_ALL_ORIGINS=true
-
-# Public IP Access (Development)
-NEXT_PUBLIC_DEV_IP=147.251.255.227
-NEXT_PUBLIC_DEV_URL_IP=http://147.251.255.227:3000
-NEXT_PUBLIC_DEV_URL_LOCAL=http://localhost:3000
+# Production Security
+NEXT_PUBLIC_DEBUG_MODE=false
+NEXT_PUBLIC_SHOW_ENV_INFO=false
 
 # ===================================
 # CLOUDFLARE R2 STORAGE (10GB FREE)
@@ -124,11 +112,10 @@ SMART_STORAGE_TERTIARY=${config.SMART_STORAGE_TERTIARY}
 SMART_STORAGE_COMPRESSION_QUALITY=${config.SMART_STORAGE_COMPRESSION_QUALITY}
 
 # ===================================
-# SOCKET.IO LOCAL SERVER
+# SOCKET.IO EXTERNAL INTEGRATION
 # ===================================
 NEXT_PUBLIC_USE_SOCKETIO=true
-NEXT_PUBLIC_SOCKETIO_URL=http://147.251.255.227:3001
-SOCKETIO_PORT=3001
+NEXT_PUBLIC_SOCKETIO_URL=http://147.251.255.227:4001
 
 # Real-time Features
 ENABLE_WEBSOCKET=true
@@ -142,19 +129,52 @@ ENABLE_SOCKETIO_ROOMS=true
   console.log('✅ Generated .env.local');
 }
 
+async function generateVercelEnvFile(config) {
+  console.log('📝 Generating .env.production for Vercel...');
+
+  const vercelEnvContent = `# Vercel Production Environment
+# Auto-generated for deployment
+
+NODE_ENV=production
+NEXT_PUBLIC_ENV_MODE=production
+NEXT_PUBLIC_APP_URL=https://hafiportrait.photography
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=${config.NEXT_PUBLIC_SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${config.NEXT_PUBLIC_SUPABASE_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${config.SUPABASE_SERVICE_ROLE_KEY}
+
+# Authentication
+JWT_SECRET=${config.JWT_SECRET}
+
+# Vercel Optimizations
+NEXT_TELEMETRY_DISABLED=1
+`;
+
+  const vercelEnvPath = path.join(process.cwd(), '.env.production');
+  fs.writeFileSync(vercelEnvPath, vercelEnvContent);
+  
+  console.log('✅ Generated .env.production for Vercel');
+}
+
 async function validateConfiguration(config) {
-  console.log('🔍 Validating configuration...');
+  console.log('🔍 Validating production configuration...');
 
   const checks = [
     {
       name: 'NODE_ENV',
-      test: config.NODE_ENV === 'development',
+      test: config.NODE_ENV === 'production',
       value: config.NODE_ENV
     },
     {
-      name: 'APP_URL',
-      test: config.NEXT_PUBLIC_APP_URL.includes('0.0.0.0') || config.NEXT_PUBLIC_APP_URL.includes('localhost'),
+      name: 'Production URL',
+      test: config.NEXT_PUBLIC_APP_URL === 'https://hafiportrait.photography',
       value: config.NEXT_PUBLIC_APP_URL
+    },
+    {
+      name: 'HTTPS Protocol',
+      test: config.NEXT_PUBLIC_APP_URL.startsWith('https://'),
+      value: 'HTTPS enabled'
     },
     {
       name: 'Supabase URL',
@@ -163,7 +183,7 @@ async function validateConfiguration(config) {
     },
     {
       name: 'JWT Secret',
-      test: config.JWT_SECRET.includes('development'),
+      test: config.JWT_SECRET.includes('production'),
       value: config.JWT_SECRET.substring(0, 20) + '...'
     }
   ];
@@ -176,15 +196,15 @@ async function validateConfiguration(config) {
   const allPassed = checks.every(check => check.test);
   
   if (allPassed) {
-    console.log('✅ All configuration checks passed');
+    console.log('✅ All production configuration checks passed');
   } else {
-    console.log('⚠️ Some configuration checks failed');
+    console.log('⚠️ Some production configuration checks failed');
     process.exit(1);
   }
 }
 
 // Run setup
-setupDevelopmentEnvironment().catch(error => {
-  console.error('❌ Development setup failed:', error);
+setupProductionEnvironment().catch(error => {
+  console.error('❌ Production setup failed:', error);
   process.exit(1);
 });

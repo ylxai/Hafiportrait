@@ -1,5 +1,5 @@
 /**
- * Admin Login Page
+ * Modern Admin Login Page
  * /admin/login
  */
 
@@ -12,7 +12,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Lock, User, Camera, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { 
+  Eye, 
+  EyeOff, 
+  Lock, 
+  User, 
+  Camera, 
+  CheckCircle, 
+  AlertCircle, 
+  Info,
+  Shield,
+  Sparkles,
+  ArrowRight,
+  LogIn
+} from 'lucide-react';
 import { ColorPaletteProvider } from '@/components/ui/color-palette-provider';
 
 // Toast notification component
@@ -38,7 +51,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border shadow-lg max-w-sm ${colors[type]}`}>
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl border shadow-xl backdrop-blur-sm max-w-sm ${colors[type]} transition-all duration-300`}>
       <div className="flex items-center space-x-3">
         {icons[type]}
         <div className="flex-1">
@@ -46,7 +59,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           ×
         </button>
@@ -62,138 +75,72 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-
+  
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/admin';
 
-  // Show toast notification
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error && (username || password)) {
+      setError('');
+    }
+  }, [username, password, error]);
+
+  // Toast functions
   const showToast = (message: string, type: 'success' | 'error' | 'info') => {
     setToast({ message, type });
   };
 
-  // Clear toast
   const clearToast = () => {
     setToast(null);
   };
 
-  // Clear form
-  const clearForm = () => {
-    setUsername('');
-    setPassword('');
-    setError('');
-    setSuccess('');
-  };
-
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      setError('Username dan password harus diisi');
+      showToast('Username dan password harus diisi', 'error');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      // Validate form inputs
-      if (!username.trim() || !password.trim()) {
-        setError('Username dan password harus diisi');
-        showToast('Username dan password harus diisi', 'error');
-        return;
-      }
-
-      // Smart URL detection for different environments
-      const baseUrl = (() => {
-        // First, check for environment variable
-        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-          console.log('Using NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
-          return process.env.NEXT_PUBLIC_API_BASE_URL;
-        }
-
-        if (typeof window !== 'undefined') {
-          const currentOrigin = window.location.origin;
-          console.log('Current origin:', currentOrigin);
-          
-          // Check if this is a Vercel preview domain
-          if (currentOrigin.includes('vercel.app') && !currentOrigin.includes('hafiportrait')) {
-            // For Vercel preview, use the main production API
-            console.log('Detected Vercel preview, using production API');
-            return 'https://hafiportrait.photography';
-          }
-          
-          return currentOrigin;
-        }
-        
-        // Server-side fallback
-        if (process.env.NODE_ENV === 'production') {
-          return process.env.NEXT_PUBLIC_APP_URL || 'https://hafiportrait.photography';
-        }
-        return process.env.DSLR_API_BASE_URL || 'http://localhost:3000';
-      })();
-
-      console.log('Using API base URL:', baseUrl);
-      const apiUrl = `${baseUrl}/api/auth/login`;
-      console.log('Full API URL:', apiUrl);
-
-      // Add timeout to fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: username.trim(), password }),
-        signal: controller.signal,
+        credentials: 'include',
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
       });
 
-      clearTimeout(timeoutId);
+      const data = await response.json();
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      let data;
-      try {
-        data = await response.json();
-        console.log('Response data:', data);
-      } catch (parseError) {
-        console.error('Error parsing response:', parseError);
-        throw new Error('Invalid response from server');
-      }
-
-      if (response.ok) {
-        // Login successful
+      if (response.ok && data.success) {
         setSuccess('Login berhasil! Mengalihkan ke dashboard...');
         showToast('Login berhasil!', 'success');
         
-        // Clear form
-        clearForm();
+        // Get redirect URL from search params or default to admin
+        const redirectUrl = searchParams?.get('redirect') || '/admin';
         
-        // Redirect after a short delay to show success message
+        // Small delay to show success message
         setTimeout(() => {
-          router.replace(redirectTo);
-        }, 1500);
+          router.push(redirectUrl);
+        }, 1000);
       } else {
-        // Handle different error types
-        let errorMessage = 'Login gagal';
+        let errorMessage = 'Login gagal. Silakan coba lagi.';
         
         if (response.status === 401) {
           errorMessage = 'Username atau password salah';
-        } else if (response.status === 429) {
-          errorMessage = 'Terlalu banyak percobaan login. Silakan coba lagi nanti.';
-        } else if (response.status === 500) {
-          errorMessage = 'Terjadi kesalahan server. Silakan coba lagi.';
-        } else if (response.status === 404) {
-          errorMessage = 'API endpoint tidak ditemukan. Silakan coba lagi.';
-        } else if (response.status === 403) {
-          errorMessage = 'Akses ditolak. Silakan coba lagi.';
-        } else if (response.status === 502) {
-          errorMessage = 'Server sedang dalam maintenance. Silakan coba lagi nanti.';
-        } else if (response.status === 503) {
-          errorMessage = 'Layanan sedang tidak tersedia. Silakan coba lagi nanti.';
-        } else if (response.status === 504) {
-          errorMessage = 'Server timeout. Silakan coba lagi.';
         } else if (data?.error) {
           errorMessage = data.error;
         }
@@ -203,19 +150,7 @@ function LoginForm() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      
-      let errorMessage = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
-      
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
-      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        errorMessage = 'Gagal terhubung ke API. Silakan coba lagi.';
-      } else if (error instanceof Error && error.name === 'AbortError') {
-        errorMessage = 'Request timeout. Silakan coba lagi.';
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+      const errorMessage = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
@@ -228,7 +163,15 @@ function LoginForm() {
 
   return (
     <ColorPaletteProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 opacity-20" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
+        
+        {/* Floating Elements */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur-3xl opacity-20 animate-pulse delay-1000"></div>
+        
         {/* Toast Notification */}
         {toast && (
           <Toast
@@ -238,34 +181,46 @@ function LoginForm() {
           />
         )}
 
-        <div className="w-full max-w-md space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-dynamic-primary rounded-full p-3">
-                <Camera className="h-8 w-8 text-white" />
+        <div className="w-full max-w-md space-y-8 relative z-10">
+          {/* Modern Header */}
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-4 shadow-2xl">
+                  <Camera className="h-10 w-10 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1">
+                  <Sparkles className="h-5 w-5 text-yellow-400 animate-pulse" />
+                </div>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">HafiPortrait</h1>
-            <p className="text-gray-600">Admin Dashboard Login</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              HafiPortrait
+            </h1>
+            <p className="text-gray-300 text-lg">Admin Dashboard</p>
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
+              <Shield className="h-4 w-4" />
+              <span>Secure Login Portal</span>
+            </div>
           </div>
 
-          {/* Login Form */}
-          <Card className="shadow-xl border-0">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold text-center text-gray-900">
-                Welcome Back
+          {/* Modern Login Form */}
+          <Card className="shadow-2xl border-0 bg-white/10 backdrop-blur-xl border border-white/20">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-2xl font-semibold text-center text-white flex items-center justify-center space-x-2">
+                <LogIn className="h-6 w-6" />
+                <span>Admin Portal</span>
               </CardTitle>
-              <p className="text-center text-gray-600">
-                Sign in to your admin account
+              <p className="text-center text-gray-300 text-sm">
+                Enter your credentials to continue
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* Success Message */}
               {success && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
+                <Alert className="border-green-400/50 bg-green-500/10 backdrop-blur-sm">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                  <AlertDescription className="text-green-300">
                     {success}
                   </AlertDescription>
                 </Alert>
@@ -273,27 +228,29 @@ function LoginForm() {
 
               {/* Error Message */}
               {error && (
-                <Alert variant="destructive" className="border-red-200 bg-red-50">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
+                <Alert className="border-red-400/50 bg-red-500/10 backdrop-blur-sm">
+                  <AlertCircle className="h-4 w-4 text-red-400" />
+                  <AlertDescription className="text-red-300">
                     {error}
                   </AlertDescription>
                 </Alert>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Label htmlFor="username" className="text-sm font-medium text-gray-200">
+                    Username
+                  </Label>
+                  <div className="relative group">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
                     <Input
                       id="username"
                       type="text"
                       placeholder="Enter your username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="pl-10 h-12"
+                      className="pl-12 h-12 bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400/50 backdrop-blur-sm rounded-xl"
                       required
                       autoComplete="username"
                       disabled={isLoading}
@@ -303,16 +260,18 @@ function LoginForm() {
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-200">
+                    Password
+                  </Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-12"
+                      className="pl-12 pr-12 h-12 bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400/50 backdrop-blur-sm rounded-xl"
                       required
                       autoComplete="current-password"
                       disabled={isLoading}
@@ -320,7 +279,7 @@ function LoginForm() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-blue-400 transition-colors"
                       disabled={isLoading}
                     >
                       {showPassword ? <EyeOff /> : <Eye />}
@@ -328,41 +287,29 @@ function LoginForm() {
                   </div>
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-dynamic-primary focus:ring-dynamic-primary border-gray-300 rounded"
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="remember" className="text-sm text-gray-600">
-                    Remember me for 30 days
-                  </Label>
-                </div>
-
                 {/* Login Button */}
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-dynamic-primary hover:bg-dynamic-primary/90 text-white font-medium disabled:opacity-50"
+                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:transform-none"
                   disabled={isLoading || !isFormValid}
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                       <span>Signing in...</span>
                     </div>
                   ) : (
-                    'Sign In'
+                    <div className="flex items-center space-x-2">
+                      <span>Sign In</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
                   )}
                 </Button>
               </form>
 
               {/* Security Notice */}
-              <div className="pt-4 border-t">
-                <p className="text-xs text-gray-500 text-center">
+              <div className="pt-4 border-t border-white/10">
+                <p className="text-xs text-gray-400 text-center">
                   🔒 Your session is secured with industry-standard encryption
                 </p>
               </div>
@@ -370,7 +317,7 @@ function LoginForm() {
           </Card>
 
           {/* Footer */}
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-400">
             <p>© 2024 HafiPortrait. All rights reserved.</p>
             <p className="mt-1">Professional Photography Services</p>
           </div>
@@ -383,7 +330,7 @@ function LoginForm() {
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     }>

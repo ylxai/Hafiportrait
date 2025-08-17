@@ -1,13 +1,10 @@
+/* BACKUP created by Rovo Dev */
 /**
  * Simple Test API Endpoint for Vercel Preview Debugging
  * GET /api/test-simple
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-// Force Node.js runtime and dynamic rendering to avoid any edge/runtime quirks
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 // Handle OPTIONS preflight requests
 export async function OPTIONS(request: NextRequest) {
