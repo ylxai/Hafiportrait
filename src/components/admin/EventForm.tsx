@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import type { Event } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
+import { copyWithToast } from "@/utils/clipboard";
+import { generateEventUrl } from "@/lib/app-config";
 import { QrCode, Share2, Copy, CheckCircle, ExternalLink } from "lucide-react";
 
 // Definisikan tipe untuk data yang akan dikirim
@@ -85,12 +87,8 @@ export default function EventForm({ editingEvent, onSave, onCancel, isSaving, cr
     });
   };
 
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Berhasil Disalin! 📋",
-      description: `${type} telah disalin ke clipboard.`,
-    });
+  const copyToClipboard = async (text: string, type: string) => {
+    await copyWithToast(text, type, toast);
   };
 
   const handleCreateAnother = () => {
@@ -214,15 +212,29 @@ export default function EventForm({ editingEvent, onSave, onCancel, isSaving, cr
               </div>
 
               {/* Shareable Link */}
-              {createdEvent.shareable_link && (
+              {createdEvent.id && createdEvent.access_code && (
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
-                    onClick={() => createdEvent?.shareable_link && window.open(createdEvent.shareable_link, '_blank')}
+                    onClick={() => {
+                      const eventUrl = generateEventUrl(createdEvent.id, createdEvent.access_code);
+                      window.open(eventUrl, '_blank');
+                    }}
                     className="w-full"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Buka Link Event
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      const eventUrl = generateEventUrl(createdEvent.id, createdEvent.access_code);
+                      copyToClipboard(eventUrl, "Link Event");
+                    }}
+                    className="w-full"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Link Event
                   </Button>
                 </div>
               )}

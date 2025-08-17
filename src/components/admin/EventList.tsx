@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { EventBackupManager } from "./event-backup-manager";
 import { EventStatusManager, type EventWithStatus } from "./event-status-manager";
+import { copyWithToast } from "@/utils/clipboard";
+import { generateEventUrl } from "@/lib/app-config";
 
 interface EventListProps {
   events: Event[];
@@ -46,36 +48,7 @@ export default function EventList({
   const [backupStatuses, setBackupStatuses] = useState<Record<string, any>>({});
 
   const copyToClipboard = async (text: string, type: string) => {
-    try {
-      // Modern clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // Fallback for older browsers or non-HTTPS
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        textArea.remove();
-      }
-      
-      toast({
-        title: "✅ Berhasil Disalin!",
-        description: `${type} telah disalin ke clipboard.`,
-      });
-    } catch (error) {
-      console.error('Copy failed:', error);
-      toast({
-        title: "❌ Gagal Menyalin",
-        description: `Tidak dapat menyalin ${type}. Silakan salin manual.`,
-        variant: "destructive",
-      });
-    }
+    await copyWithToast(text, type, toast);
   };
 
   const toggleEventExpansion = (eventId: string) => {
@@ -209,7 +182,8 @@ export default function EventList({
                       size="sm" 
                       variant="outline" 
                       onClick={() => {
-                        const linkToCopy = event.shareable_link || `${window.location.origin}/event/${event.id}?code=${event.access_code}`;
+                        // Always generate fresh URL using correct base URL
+                        const linkToCopy = generateEventUrl(event.id, event.access_code);
                         copyToClipboard(linkToCopy, "Link Share");
                       }}
                     >

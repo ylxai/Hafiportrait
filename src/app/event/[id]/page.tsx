@@ -13,6 +13,7 @@ import { useSkeletonPerformance } from "@/hooks/use-skeleton-performance";
 // Custom hooks
 import { useEventData } from "@/hooks/use-event-data";
 import { useEventActions } from "@/hooks/use-event-actions";
+import { generateEventUrl } from "@/lib/app-config";
 
 // Event components
 import EventHeader from "@/components/event/EventHeader";
@@ -97,8 +98,10 @@ export default function EventPage() {
   };
 
   const handleShare = () => {
-    if (event?.shareable_link) {
-      copyToClipboard(event.shareable_link);
+    if (event?.id && event?.access_code) {
+      // Always generate fresh URL using correct base URL
+      const shareableUrl = generateEventUrl(event.id, event.access_code);
+      copyToClipboard(shareableUrl);
     }
   };
 

@@ -1,187 +1,53 @@
-/**
- * Admin Dashboard - Mobile Optimized Version
- * Prioritas tampilan mobile dengan navigasi yang lebih baik
- */
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useRequireAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, Stats } from "@/lib/database";
 
-// Import mobile components
-import { MobileBottomNav } from "@/components/admin/mobile-bottom-nav";
-import { MobileHeader } from "@/components/admin/mobile-header";
-import { ResponsiveGrid, MobileCard } from "@/components/admin/responsive-grid";
-import { MobileDataTable } from "@/components/admin/mobile-data-table";
+// Import modern components
+import { ModernAdminLayout } from "@/components/admin/modern-admin-layout";
 import { 
-  MobileFormField, 
-  MobileFormSection, 
-  MobileFormActions,
-  MobileInput,
-  MobileTextarea,
-  MobileSelect 
-} from "@/components/admin/mobile-form";
+  DashboardSection,
+  EventsListSection,
+  EventsCreateSection,
+  EventsStatusSection,
+  MediaHomepageSection,
+  MediaSlideshowSection,
+  MediaEventsSection,
+  SystemMonitorSection,
+  SystemDSLRSection,
+  SystemBackupSection,
+  SystemNotificationsSection,
+  SettingsThemeSection,
+  SettingsProfileSection
+} from "@/components/admin/modern-dashboard-sections";
 
-// Import existing components
-import EventForm from "@/components/admin/EventForm";
-import { EventStatusSummary } from "@/components/admin/event-status-summary";
-import { AutoStatusManager } from "@/components/admin/auto-status-manager";
-import { SmartNotificationManager } from "@/components/admin/smart-notification-manager";
+// Import existing components for functionality
 import { QRCodeDialog } from "@/components/admin/qr-code-dialog";
-import StatsCards from "@/components/admin/StatsCards";
+import EventForm from "@/components/admin/EventForm";
 import { ToastProvider } from "@/components/ui/toast-notification";
 import PhotoLightbox from "@/components/photo-lightbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 
-// Import icons
-import { 
-  Calendar, 
-  Camera, 
-  MessageSquare,
-  Plus,
-  Edit,
-  Archive,
-  BarChart3,
-  TrendingUp,
-  Users,
-  Activity,
-  Image,
-  Trash,
-  QrCode
-} from "lucide-react";
-
-// Dynamic imports untuk komponen berat
-const DSLRMonitor = dynamic(() => import("@/components/admin/dslr-monitor"), {
-  ssr: false,
-  loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg"></div>
-});
-
-const SystemMonitor = dynamic(() => import("@/components/admin/system-monitor"), {
-  ssr: false,
-  loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg"></div>
-});
-
-const BackupStatusMonitor = dynamic(() => import("@/components/admin/backup-status-monitor").then(mod => ({ default: mod.BackupStatusMonitor })), {
-  ssr: false,
-  loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg"></div>
-});
-
-const ColorPaletteSwitcher = dynamic(() => import("@/components/ui/color-palette-switcher").then(mod => mod.ColorPaletteSwitcher), {
-  ssr: false,
-  loading: () => <div className="w-8 h-8"></div>
-});
-
-export default function AdminDashboardMobile() {
-  // Enhanced auth state with session continuity
-  const [authState, setAuthState] = useState({
-    isLoading: true,
-    isAuthenticated: false,
-    user: null
-  });
-  
-  useEffect(() => {
-    const validateSession = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.user) {
-            setAuthState({
-              isLoading: false,
-              isAuthenticated: true,
-              user: data.user
-            });
-            return;
-          }
-        }
-        
-        // Session invalid - redirect to login
-        window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
-        
-      } catch (error) {
-        console.error('Session validation failed:', error);
-        // Fallback: assume authenticated for now to prevent redirect loops
-        setAuthState({
-          isLoading: false,
-          isAuthenticated: true,
-          user: { id: 1, username: 'hafi', full_name: 'Hafi Portrait', role: 'superadmin' }
-        });
-      }
-    };
-    
-    validateSession();
-    
-    // Set up periodic session validation
-    const sessionInterval = setInterval(validateSession, 10 * 60 * 1000); // 10 minutes
-    
-    return () => clearInterval(sessionInterval);
-  }, []);
-  
-  // Show loading state during session validation
-  if (authState.isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500/30 border-t-blue-500"></div>
-            <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-4 border-blue-500/20"></div>
-          </div>
-          <p className="mt-6 text-white text-lg font-medium">Validating Session</p>
-          <p className="mt-2 text-gray-300 text-sm">Please wait...</p>
-        </div>
-      </div>
-    );
-  }
+export default function ModernAdminDashboard() {
+  const auth = useRequireAuth();
   const { toast } = useToast();
-  
-  // Use simplified auth state instead of complex hook
-  const auth = authState;
   const queryClient = useQueryClient();
   
   // State management
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [createdEvent, setCreatedEvent] = useState<Event | null>(null);
-  
-  // Photo management states
-  const [selectedPhotoTab, setSelectedPhotoTab] = useState("homepage");
-  const [selectedEventForPhotos, setSelectedEventForPhotos] = useState("");
-  const [isHomepageUploadOpen, setIsHomepageUploadOpen] = useState(false);
-  const [isOfficialUploadOpen, setIsOfficialUploadOpen] = useState(false);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
-  
-  // QR Code Dialog state
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
   const [selectedEventForQR, setSelectedEventForQR] = useState<Event | null>(null);
   
-  // Logout handler
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-      queryClient.clear();
-      window.location.href = "/admin/login";
-    } catch (error) {
-      console.error("Logout error:", error);
-      window.location.href = "/admin/login";
-    }
-  };
+  // Photo management states
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [isSlideshowPanelOpen, setIsSlideshowPanelOpen] = useState(false);
 
   // Fetch admin stats
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
@@ -214,6 +80,19 @@ export default function AdminDashboardMobile() {
     },
   });
 
+  // Fetch slideshow photos
+  const { data: slideshowPhotos = [], isLoading: slideshowPhotosLoading } = useQuery({
+    queryKey: ['/api/admin/slideshow'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/slideshow");
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Event photos state
+  const [selectedEventForPhotos, setSelectedEventForPhotos] = useState("");
+
   // Fetch photos for selected event
   const { data: eventPhotos = [], isLoading: eventPhotosLoading } = useQuery({
     queryKey: ['/api/admin/photos/event', selectedEventForPhotos],
@@ -236,26 +115,68 @@ export default function AdminDashboardMobile() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/events'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       setCreatedEvent(newEvent);
+      setIsEventFormOpen(false);
+      
+      // Show success notification
       toast({
         title: "✅ Event Berhasil Dibuat!",
-        description: "Event baru telah ditambahkan.",
+        description: `Event "${newEvent.name}" telah ditambahkan.`,
       });
+      
+      // Show QR Code modal after creation
+      setSelectedEventForQR(newEvent);
+      setIsQRDialogOpen(true);
+      
+      // Navigate back to events list
+      setActiveSection('events-list');
     },
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: async (eventData: any) => {
-      const response = await apiRequest("PUT", `/api/admin/events/${eventData.id}`, eventData);
+    mutationFn: async ({ eventId, eventData }: { eventId: string; eventData: any }) => {
+      const response = await apiRequest("PUT", `/api/admin/events/${eventId}`, eventData);
+      if (!response.ok) throw new Error('Failed to update event');
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       setIsEventFormOpen(false);
       setEditingEvent(null);
-      setCreatedEvent(null);
       toast({
-        title: "✅ Event Berhasil Diperbarui!",
+        title: "✅ Event Berhasil Diupdate!",
         description: "Perubahan telah disimpan.",
+      });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/events/${eventId}`);
+      if (!response.ok) throw new Error('Failed to delete event');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({
+        title: "✅ Event Berhasil Dihapus!",
+        description: "Event telah dihapus dari sistem.",
+      });
+    },
+  });
+
+  const updateEventStatusMutation = useMutation({
+    mutationFn: async ({ eventId, status }: { eventId: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/events/${eventId}/status`, { status });
+      if (!response.ok) throw new Error('Failed to update event status');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/events'] });
+      toast({
+        title: "✅ Status Event Diupdate!",
+        description: "Status event berhasil diubah.",
       });
     },
   });
@@ -285,34 +206,6 @@ export default function AdminDashboardMobile() {
     },
   });
 
-  // Upload official photo mutation
-  const uploadOfficialPhotoMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('uploaderName', 'Admin');
-      formData.append('albumName', 'Official');
-      const response = await apiRequest("POST", `/api/events/${selectedEventForPhotos}/photos`, formData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
-      setIsOfficialUploadOpen(false);
-      toast({
-        title: "✅ Foto Official Berhasil Diupload!",
-        description: "Foto telah ditambahkan ke galeri official event.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "❌ Gagal Upload Foto Official",
-        description: "Terjadi kesalahan saat mengupload foto official.",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Delete photo mutation
   const deletePhotoMutation = useMutation({
     mutationFn: async (photoId: string) => {
@@ -325,7 +218,6 @@ export default function AdminDashboardMobile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/homepage'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       toast({
         title: "✅ Foto Berhasil Dihapus!",
@@ -341,29 +233,145 @@ export default function AdminDashboardMobile() {
     },
   });
 
+  // Add photo to slideshow mutation
+  const addToSlideshowMutation = useMutation({
+    mutationFn: async (photoId: string) => {
+      console.log('Adding photo to slideshow:', photoId);
+      
+      const response = await apiRequest('POST', '/api/admin/slideshow', {
+        photoId: photoId
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to add photo to slideshow');
+      }
+      
+      const result = await response.json();
+      console.log('Success response:', result);
+      return result;
+    },
+    onSuccess: (data) => {
+      console.log('Successfully added to slideshow:', data);
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/slideshow'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/homepage'] });
+      toast({
+        title: "✅ Berhasil!",
+        description: "Foto berhasil ditambahkan ke slideshow",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error adding to slideshow:', error);
+      toast({
+        title: "❌ Gagal",
+        description: error.message || "Gagal menambahkan foto ke slideshow",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove photo from slideshow mutation
+  const removeFromSlideshowMutation = useMutation({
+    mutationFn: async (photoId: string) => {
+      const response = await apiRequest('DELETE', `/api/admin/slideshow?photoId=${photoId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/slideshow'] });
+      toast({
+        title: "✅ Berhasil!",
+        description: "Foto berhasil dihapus dari slideshow",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "❌ Gagal",
+        description: error.message || "Gagal menghapus foto dari slideshow",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Upload event photo mutation
+  const uploadEventPhotoMutation = useMutation({
+    mutationFn: async ({ file, albumName }: { file: File; albumName: string }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('uploaderName', 'Admin');
+      formData.append('albumName', albumName);
+      const response = await apiRequest("POST", `/api/events/${selectedEventForPhotos}/photos`, formData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({
+        title: "✅ Foto Event Berhasil Diupload!",
+        description: "Foto telah ditambahkan ke galeri event.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "❌ Gagal Upload Foto Event",
+        description: "Terjadi kesalahan saat mengupload foto event.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Event handlers
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      queryClient.clear();
+      window.location.href = "/admin/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const handleCreateNewEvent = () => {
     setEditingEvent(null);
+    setCreatedEvent(null);
     setIsEventFormOpen(true);
+  };
+
+  const handleCreateNewEventSection = () => {
+    setActiveSection('events-create');
   };
 
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
+    setCreatedEvent(null);
     setIsEventFormOpen(true);
   };
 
-  const handleEventSubmit = async (data: any) => {
+  const handleDeleteEvent = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (confirm(`Yakin ingin menghapus event "${event?.name}"? Semua foto dan pesan akan ikut terhapus.`)) {
+      deleteEventMutation.mutate(eventId);
+    }
+  };
+
+  const handleShowQRCode = (event: Event) => {
+    setSelectedEventForQR(event);
+    setIsQRDialogOpen(true);
+  };
+
+  const handleEventSubmit = async (eventData: any) => {
     if (editingEvent) {
-      updateEventMutation.mutate({ ...data, id: editingEvent.id });
+      updateEventMutation.mutate({ eventId: editingEvent.id, eventData });
     } else {
-      createEventMutation.mutate(data);
+      createEventMutation.mutate(eventData);
     }
   };
 
   // Photo management handlers
-  const handleHomepagePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+  const handleHomepagePhotoUpload = (files: FileList) => {
+    Array.from(files).forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File Terlalu Besar",
@@ -376,26 +384,91 @@ export default function AdminDashboardMobile() {
     });
   };
 
-  const handleOfficialPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Terlalu Besar",
-          description: "Ukuran file maksimal 10MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-      uploadOfficialPhotoMutation.mutate(file);
-    }
+  const handlePhotoClick = (index: number) => {
+    setSelectedPhotoIndex(index);
+    setIsLightboxOpen(true);
   };
 
-  // QR Code handlers
-  const handleShowQRCode = (event: Event) => {
-    setSelectedEventForQR(event);
-    setIsQRDialogOpen(true);
+  // Section props
+  const sectionProps = {
+    stats,
+    events,
+    onCreateEvent: handleCreateNewEventSection,
+    onEditEvent: handleEditEvent,
+    onDeleteEvent: handleDeleteEvent,
+    onShowQRCode: handleShowQRCode,
+    onUpdateEventStatus: (eventId: string, status: string) => 
+      updateEventStatusMutation.mutate({ eventId, status }),
+    onEventSubmit: handleEventSubmit,
+    isCreating: createEventMutation.isPending,
+    onCancel: () => setActiveSection('events-list')
+  };
+
+  // Media section props
+  const mediaSectionProps = {
+    homepagePhotos,
+    isLoading: homepagePhotosLoading,
+    onUpload: handleHomepagePhotoUpload,
+    onDelete: (photoId: string) => deletePhotoMutation.mutate(photoId),
+    onPhotoClick: handlePhotoClick
+  };
+
+  // Slideshow section props
+  const slideshowSectionProps = {
+    slideshowPhotos,
+    homepagePhotos,
+    isLoading: slideshowPhotosLoading,
+    onAddToSlideshow: (photoId: string) => addToSlideshowMutation.mutate(photoId),
+    onRemoveFromSlideshow: (photoId: string) => removeFromSlideshowMutation.mutate(photoId),
+    isAddingToSlideshow: addToSlideshowMutation.isPending,
+    isPanelOpen: isSlideshowPanelOpen,
+    onPanelToggle: setIsSlideshowPanelOpen
+  };
+
+  // Event photos section props
+  const eventPhotosSectionProps = {
+    events,
+    eventPhotos,
+    selectedEventForPhotos,
+    isLoading: eventPhotosLoading,
+    onEventSelect: setSelectedEventForPhotos,
+    onPhotoUpload: (file: File, albumName: string) => 
+      uploadEventPhotoMutation.mutate({ file, albumName }),
+    onPhotoClick: handlePhotoClick
+  };
+
+  // Render current section
+  const renderCurrentSection = () => {
+    switch (activeSection) {
+      case 'dashboard':
+        return <DashboardSection {...sectionProps} />;
+      case 'events-list':
+        return <EventsListSection {...sectionProps} />;
+      case 'events-create':
+        return <EventsCreateSection {...sectionProps} />;
+      case 'events-status':
+        return <EventsStatusSection {...sectionProps} />;
+      case 'media-homepage':
+        return <MediaHomepageSection {...mediaSectionProps} />;
+      case 'media-slideshow':
+        return <MediaSlideshowSection {...slideshowSectionProps} />;
+      case 'media-events':
+        return <MediaEventsSection {...eventPhotosSectionProps} />;
+      case 'system-monitor':
+        return <SystemMonitorSection />;
+      case 'system-dslr':
+        return <SystemDSLRSection />;
+      case 'system-backup':
+        return <SystemBackupSection />;
+      case 'system-notifications':
+        return <SystemNotificationsSection {...sectionProps} />;
+      case 'settings-theme':
+        return <SettingsThemeSection />;
+      case 'settings-profile':
+        return <SettingsProfileSection user={auth.user} />;
+      default:
+        return <DashboardSection {...sectionProps} />;
+    }
   };
 
   // Loading state
@@ -409,591 +482,73 @@ export default function AdminDashboardMobile() {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
-        {/* Mobile Header */}
-        <MobileHeader 
-          user={auth.user} 
-          onLogout={handleLogout}
-        />
+      <ModernAdminLayout
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        user={auth.user}
+        onLogout={handleLogout}
+        stats={stats}
+      >
+        {renderCurrentSection()}
+      </ModernAdminLayout>
 
-        {/* Desktop Header */}
-        <div className="hidden md:block bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">HafiPortrait Photography</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-700">{auth.user.full_name}</span>
-                <Button onClick={handleLogout} variant="outline" size="sm">
-                  Keluar
-                </Button>
-              </div>
+      {/* Event Form Modal */}
+      {isEventFormOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setIsEventFormOpen(false)} />
+            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <EventForm
+                editingEvent={editingEvent}
+                createdEvent={createdEvent}
+                isSaving={createEventMutation.isPending || updateEventMutation.isPending}
+                onSave={handleEventSubmit}
+                onCancel={() => {
+                  setIsEventFormOpen(false);
+                  setEditingEvent(null);
+                  setCreatedEvent(null);
+                }}
+              />
             </div>
           </div>
         </div>
+      )}
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 py-4 md:px-6 lg:px-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            {/* Hidden TabsList - Required for Tabs to work, navigation handled by MobileBottomNav */}
-            <TabsList className="hidden">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="photos">Photos</TabsTrigger>
-              <TabsTrigger value="system">System</TabsTrigger>
-              <TabsTrigger value="customization">Customization</TabsTrigger>
-            </TabsList>
-            
-            {/* Dashboard Tab */}
-            <TabsContent value="dashboard" className="space-y-4">
-              {/* Stats Cards - Mobile Optimized */}
-              <ResponsiveGrid columns={{ mobile: 1, tablet: 2, desktop: 3 }}>
-                 <MobileCard
-                  title="Total Event"
-                  value={(stats?.totalEvents as number) || 0}
-                  icon={<Calendar className="h-5 w-5" />}
-                  subtitle="Event aktif & selesai"
-                />
-                 <MobileCard
-                  title="Total Foto"
-                  value={(stats?.totalPhotos as number) || 0}
-                  icon={<Camera className="h-5 w-5" />}
-                  subtitle="Semua galeri"
-                />
-                 <MobileCard
-                  title="Total Pesan"
-                  value={(stats?.totalMessages as number) || 0}
-                  icon={<MessageSquare className="h-5 w-5" />}
-                  subtitle="Dari pengunjung"
-                />
-              </ResponsiveGrid>
-
-              {/* Performance Overview - Real Data */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Ringkasan Sistem</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveGrid columns={{ mobile: 2, tablet: 4, desktop: 4 }} gap="sm">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <Calendar className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                      <div className="text-2xl font-bold text-blue-600">{events.filter(e => e.status === 'active').length}</div>
-                      <div className="text-xs text-gray-600">Event Aktif</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <Camera className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                      <div className="text-2xl font-bold text-green-600">{events.filter(e => e.status === 'completed').length}</div>
-                      <div className="text-xs text-gray-600">Event Selesai</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <Archive className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                      <div className="text-2xl font-bold text-purple-600">{events.filter(e => e.is_archived).length}</div>
-                      <div className="text-xs text-gray-600">Event Diarsip</div>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <MessageSquare className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-                      <div className="text-2xl font-bold text-orange-600">{events.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length}</div>
-                      <div className="text-xs text-gray-600">Event Hari Ini</div>
-                    </div>
-                  </ResponsiveGrid>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity - Real Data */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Event Terbaru</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {events.slice(0, 3).map((event, index) => (
-                      <div key={event.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${
-                          event.status === 'active' ? 'bg-green-500' : 
-                          event.status === 'completed' ? 'bg-blue-500' : 
-                          event.status === 'draft' ? 'bg-gray-500' : 'bg-orange-500'
-                        }`}></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{event.name}</p>
-                          <p className="text-xs text-gray-600">
-                            {event.status === 'active' ? 'Event Aktif' : 
-                             event.status === 'completed' ? 'Event Selesai' : 
-                             event.status === 'draft' ? 'Draft' : 'Status: ' + event.status}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(event.date).toLocaleDateString('id-ID', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {events.length === 0 && (
-                      <div className="text-center py-4 text-gray-500">
-                        <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                        <p className="text-sm">Belum ada event</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Content Tab */}
-            <TabsContent value="content" className="space-y-4">
-              {/* Quick Actions */}
-              <div className="flex gap-3 mb-4">
-                <Button 
-                  onClick={handleCreateNewEvent} 
-                  className="flex-1"
-                  size="lg"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Event Baru
-                </Button>
-              </div>
-
-              {/* Enhanced Stats Cards */}
-              <StatsCards stats={stats} />
-
-              {/* Event Status Summary */}
-              <EventStatusSummary events={events} />
-
-              {/* Auto Status Manager */}
-              <AutoStatusManager events={events} />
-
-              {/* Events List - Mobile Optimized */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Daftar Event</CardTitle>
-                </CardHeader>
-                <CardContent>
-              <MobileDataTable
-                    data={events}
-                    columns={[
-                      {
-                        key: 'name',
-                        label: 'Nama Event',
-                        priority: 'high',
-                        render: (event) => (
-                           <div>
-                             <p className="font-medium">{event.name}</p>
-                             <p className="text-xs text-gray-500">{event.is_premium ? 'Premium' : 'Reguler'}</p>
-                           </div>
-                        )
-                      },
-                      {
-                        key: 'date',
-                        label: 'Tanggal',
-                        priority: 'high',
-                        render: (event) => new Date(event.date).toLocaleDateString('id-ID')
-                      },
-                      {
-                        key: 'status',
-                        label: 'Status',
-                        priority: 'medium',
-                      render: (event) => (
-                          <>{(() => {
-                            const labelMap: Record<string, { label: string; cls: string }> = {
-                              draft: { label: 'Draft', cls: 'bg-gray-100 text-gray-700' },
-                              active: { label: 'Aktif', cls: 'bg-green-100 text-green-700' },
-                              paused: { label: 'Dijeda', cls: 'bg-yellow-100 text-yellow-700' },
-                              completed: { label: 'Selesai', cls: 'bg-gray-100 text-gray-700' },
-                              cancelled: { label: 'Dibatalkan', cls: 'bg-red-100 text-red-700' },
-                              archived: { label: 'Diarsipkan', cls: 'bg-gray-100 text-gray-700' },
-                            };
-                            const conf = labelMap[event.status || 'draft'];
-                            return (
-                              <span className={`px-2 py-1 text-xs rounded-full ${conf.cls}`}>
-                                {conf.label}
-                              </span>
-                            );
-                          })()}</>
-                        )
-                      },
-                      {
-                        key: 'photo_count',
-                        label: 'Foto',
-                        priority: 'medium',
-                        render: (event) => `${event.photo_count || 0} foto`
-                      }
-                    ]}
-                    actions={(event) => (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleShowQRCode(event)}
-                          title="Show QR Code"
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditEvent(event)}
-                          title="Edit Event"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    emptyMessage="Belum ada event"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Photos Tab */}
-            <TabsContent value="photos" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Manajemen Foto</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs value={selectedPhotoTab} onValueChange={setSelectedPhotoTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="homepage" className="flex items-center gap-2">
-                        <Image className="w-4 h-4" />
-                        Homepage
-                      </TabsTrigger>
-                      <TabsTrigger value="events" className="flex items-center gap-2">
-                        <Camera className="w-4 h-4" />
-                        Event
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* Homepage Photos */}
-                    <TabsContent value="homepage" className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Foto Galeri Homepage</h3>
-                        <Button 
-                          onClick={() => setIsHomepageUploadOpen(true)} 
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Upload Foto
-                        </Button>
-                      </div>
-
-                      {/* Upload Modal */}
-                      {isHomepageUploadOpen && (
-                        <Card className="mb-6 border-blue-200">
-                          <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Plus className="w-5 h-5 text-blue-600" />
-                              Upload Foto Homepage
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <Label htmlFor="homepage-photo-input">Pilih Foto</Label>
-                              <Input
-                                id="homepage-photo-input"
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                onChange={handleHomepagePhotoUpload}
-                                className="mt-1"
-                              />
-                              <p className="text-sm text-gray-500 mt-1">
-                                Ukuran maksimal 10MB per file.
-                              </p>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                onClick={() => setIsHomepageUploadOpen(false)}
-                                variant="outline"
-                              >
-                                Batal
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                      
-                      {uploadHomepagePhotoMutation.isPending && (
-                        <div className="flex items-center justify-center py-4">
-                          <LoadingSpinner />
-                          <span className="ml-2 text-sm text-gray-600">Mengupload foto...</span>
-                        </div>
-                      )}
-                        
-                      {homepagePhotosLoading ? (
-                        <div className="text-center py-8">
-                          <LoadingSpinner />
-                        </div>
-                      ) : homepagePhotos.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {homepagePhotos.map((photo: any, index: number) => (
-                            <div key={photo.id} className="relative group cursor-pointer"
-                            onClick={() => {
-                              setSelectedPhotoIndex(index);
-                              setIsLightboxOpen(true);
-                            }}>
-                              <img
-                                src={photo.url}
-                                alt={photo.original_name}
-                                className="w-full h-32 object-cover rounded-lg"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all rounded-lg flex items-center justify-center">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="opacity-0 group-hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (confirm('Yakin ingin menghapus foto ini?')) {
-                                      deletePhotoMutation.mutate(photo.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 text-gray-500">
-                          <Image className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>Belum ada foto di galeri homepage. Upload foto pertama Anda!</p>
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* Event Photos */}
-                    <TabsContent value="events" className="space-y-4"> 
-                      <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-                        <h3 className="text-lg font-semibold">Foto Galeri Event</h3>
-                        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-                          <select
-                            value={selectedEventForPhotos}
-                            onChange={(e) => setSelectedEventForPhotos(e.target.value)}
-                            className="px-3 py-2 border rounded-md"
-                          >
-                            <option value="">Pilih Event</option>
-                            {events.map((event: any) => (
-                              <option key={event.id} value={event.id}>
-                                {event.name}
-                              </option>
-                            ))}
-                          </select>
-                          {selectedEventForPhotos && (
-                            <Button
-                              onClick={() => setIsOfficialUploadOpen(true)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Upload Official
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Official Photo Upload Modal */}
-                      {isOfficialUploadOpen && selectedEventForPhotos && (
-                        <Card className="mb-6 border-blue-200">
-                          <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Plus className="w-5 h-5 text-blue-600" />
-                              Upload Foto Official
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <Label htmlFor="officialPhoto">Pilih Foto</Label>
-                              <Input
-                                id="officialPhoto"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleOfficialPhotoUpload}
-                                className="mt-1"
-                              />
-                              <p className="text-sm text-gray-500 mt-1">
-                                Ukuran maksimal 10MB. Format: JPG, PNG, GIF
-                              </p>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                onClick={() => setIsOfficialUploadOpen(false)}
-                                variant="outline"
-                              >
-                                Batal
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {uploadOfficialPhotoMutation.isPending && (
-                        <div className="flex items-center justify-center py-4">
-                          <LoadingSpinner />
-                          <span className="ml-2 text-sm text-gray-600">Mengupload foto official...</span>
-                        </div>
-                      )}
-
-                      {selectedEventForPhotos ? (
-                        eventPhotosLoading ? (
-                          <div className="text-center py-8">
-                            <LoadingSpinner />
-                          </div>
-                        ) : eventPhotos.length > 0 ? (
-                          <div>
-                            {/* Group photos by album */}
-                            {["Official", "Tamu", "Bridesmaid"].map(albumName => { 
-                              const albumPhotos = eventPhotos.filter((photo: any) => photo.album_name === albumName);
-                              if (albumPhotos.length === 0) return null;
-                              
-                              return (
-                                <div key={albumName} className="mb-8">
-                                  <h4 className="text-md font-semibold mb-4 text-blue-600 flex items-center gap-2">
-                                    Album {albumName} ({albumPhotos.length} foto)
-                                  </h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                      {albumPhotos.map((photo: any, index: number) => (
-                                      <div key={photo.id} className="relative group cursor-pointer"
-                                      onClick={() => {
-                                        setSelectedPhotoIndex(index);
-                                        setIsLightboxOpen(true);
-                                      }}>
-                                        <img
-                                          src={photo.url}
-                                          alt={photo.original_name}
-                                          className="w-full h-32 object-cover rounded-lg"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all rounded-lg flex items-center justify-center">
-                                          <div className="absolute bottom-1 left-1 right-1 text-xs text-white bg-black/50 rounded px-1 py-0.5 truncate">
-                                            {photo.uploader_name || 'Anonim'}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="text-center py-12 text-gray-500">
-                            <Camera className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <p>Belum ada foto di event ini.</p>
-                          </div>
-                        )
-                      ) : (
-                        <div className="text-center py-12 text-gray-500">
-                          <Camera className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>Pilih event untuk melihat foto-fotonya.</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* System Tab */}
-            <TabsContent value="system" className="space-y-4">
-              {/* System Monitors */}
-              <div className="space-y-4">
-                <SystemMonitor />
-                <DSLRMonitor />
-                <BackupStatusMonitor />
-                 <SmartNotificationManager events={events} />
-              </div>
-            </TabsContent>
-
-            {/* Customization Tab */}
-            <TabsContent value="customization" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Tema & Tampilan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Pilih Tema Warna</p>
-                        <p className="text-sm text-gray-500">Ubah skema warna website</p>
-                      </div>
-                      <ColorPaletteSwitcher />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-          </Tabs>
-        </main>
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab}
-        />
-
-        {/* Event Form Modal */}
-        {isEventFormOpen && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen p-4">
-              <div className="fixed inset-0 bg-black/50" onClick={() => setIsEventFormOpen(false)} />
-              <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <EventForm
-                  editingEvent={editingEvent}
-                  createdEvent={createdEvent}
-                  isSaving={createEventMutation.isPending || updateEventMutation.isPending}
-                  onSave={handleEventSubmit}
-                  onCancel={() => {
-                    setIsEventFormOpen(false);
-                    setEditingEvent(null);
-                    setCreatedEvent(null);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Photo Lightbox */}
-        {isLightboxOpen && selectedPhotoIndex !== null && (
-          <PhotoLightbox
-            photos={selectedPhotoTab === "homepage" ? homepagePhotos : eventPhotos}
-            currentIndex={selectedPhotoIndex}
-            onClose={() => setIsLightboxOpen(false)}
-            onDelete={(photoId) => {
-              if (confirm('Yakin ingin menghapus foto ini secara permanen?')) {
-                deletePhotoMutation.mutate(photoId, {
-                  onSuccess: () => {
-                    setIsLightboxOpen(false); 
-                  },
-                });
-              }
-            }}
-            onLike={(photoId) => {
-              // Like functionality not implemented in admin panel
-              console.log('Like photo:', photoId);
-            }}
-            onUnlike={(photoId) => {
-              // Unlike functionality not implemented in admin panel
-              console.log('Unlike photo:', photoId);
-            }}
-          />
-        )}
-
-        {/* QR Code Dialog */}
-        <QRCodeDialog
-          event={selectedEventForQR}
-          isOpen={isQRDialogOpen}
-          onClose={() => {
-            setIsQRDialogOpen(false);
-            setSelectedEventForQR(null);
+      {/* Photo Lightbox */}
+      {isLightboxOpen && selectedPhotoIndex !== null && (
+        <PhotoLightbox
+          photos={homepagePhotos}
+          currentIndex={selectedPhotoIndex}
+          onClose={() => setIsLightboxOpen(false)}
+          onDelete={(photoId) => {
+            if (confirm('Yakin ingin menghapus foto ini secara permanen?')) {
+              deletePhotoMutation.mutate(photoId, {
+                onSuccess: () => {
+                  setIsLightboxOpen(false); 
+                },
+              });
+            }
+          }}
+          onLike={(photoId) => {
+            // Like functionality not implemented in admin panel
+            console.log('Like photo:', photoId);
+          }}
+          onUnlike={(photoId) => {
+            // Unlike functionality not implemented in admin panel
+            console.log('Unlike photo:', photoId);
           }}
         />
-      </div>
+      )}
+
+      {/* QR Code Dialog */}
+      <QRCodeDialog
+        event={selectedEventForQR}
+        isOpen={isQRDialogOpen}
+        onClose={() => {
+          setIsQRDialogOpen(false);
+          setSelectedEventForQR(null);
+        }}
+      />
     </ToastProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabase'; // Remove .ts extension
 import { ImageOptimizerServer } from './image-optimizer-server';
+import { getAppBaseUrl } from './app-config';
 
 // Definisi Tipe Data untuk konsistensi
 export type Event = {
@@ -109,7 +110,7 @@ class DatabaseService {
   async getPublicEvents(): Promise<Event[]> {
     const { data, error } = await this.supabase
       .from('events')
-      .select('id, name, date, access_code, is_premium, qr_code, shareable_link')
+      .select('id, name, date, access_code, is_premium, qr_code, shareable_link, status, is_archived, photo_count')
       .is('is_premium', false) // Asumsi hanya event non-premium yang publik, sesuaikan jika perlu
       .order('date', { ascending: false });
     if (error) throw error;
@@ -138,8 +139,8 @@ class DatabaseService {
     
     try {
       // Generate QR code and shareable link using centralized config
-      // Generate event URL server-side without importing client code
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // Use the centralized app config for consistent URL generation
+      const baseUrl = getAppBaseUrl();
       const eventUrl = `${baseUrl}/event/${newEvent.id}?code=${newEvent.access_code}`;
       
       // Generate QR code using a service like QRServer.com

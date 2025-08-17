@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo, MessageReactions } from "@/lib/database";
+import { copyWithToast } from "@/utils/clipboard";
 
 export function useEventActions(eventId: string) {
   const { toast } = useToast();
@@ -111,47 +112,7 @@ export function useEventActions(eventId: string) {
 
   // Utility functions
   const copyToClipboard = async (text: string) => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        toast({
-          title: "Berhasil Disalin!",
-          description: "Link telah disalin ke clipboard.",
-        });
-      } else {
-        // Fallback untuk browser yang tidak support clipboard API
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          document.execCommand('copy');
-          toast({
-            title: "Berhasil Disalin!",
-            description: "Link telah disalin ke clipboard.",
-          });
-        } catch (err) {
-          toast({
-            title: "Gagal Menyalin",
-            description: "Silakan salin link secara manual.",
-            variant: "destructive",
-          });
-        } finally {
-          document.body.removeChild(textArea);
-        }
-      }
-    } catch (error) {
-      toast({
-        title: "Gagal Menyalin",
-        description: "Tidak dapat menyalin ke clipboard.",
-        variant: "destructive",
-      });
-    }
+    await copyWithToast(text, "Link", toast);
   };
 
   const downloadPhoto = async (photoUrl: string, fileName: string) => {

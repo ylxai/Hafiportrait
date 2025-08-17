@@ -14,6 +14,7 @@ export async function PUT(
       date: body.date,
       access_code: body.accessCode || body.access_code,
       is_premium: body.isPremium || body.is_premium,
+      status: body.status,
     });
     
     return NextResponse.json(updatedEvent);

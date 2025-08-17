@@ -41,7 +41,7 @@ const nextConfig = {
   },
   // CloudRun configuration
   images: {
-    domains: ['localhost', 'api.qrserver.com', 'azspktldiblhrwebzmwq.supabase.co', 'bwpwwtphgute.ap-southeast-1.clawcloudrun.com'],
+    domains: ['localhost', 'api.qrserver.com', 'azspktldiblhrwebzmwq.supabase.co', '147.251.255.227'],
     formats: ['image/webp', 'image/avif'],
   },
   // External packages configuration (removed for compatibility)

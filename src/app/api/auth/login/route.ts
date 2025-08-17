@@ -204,14 +204,15 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const isProduction = process.env.NODE_ENV === 'production';
     
-    console.log('Setting cookie with secure:', isProduction);
+    // Fix cookie for IP access - disable secure for development/IP access
+    const isSecure = false; // Always false for IP access
+    console.log('Setting cookie with secure:', isSecure);
     cookieStore.set('admin_session', sessionId, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
+      secure: isSecure,
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60, // 24 hours
-      path: '/',
-      domain: isProduction ? undefined : undefined, // Let browser set domain
+      path: '/'
     });
 
     // Return user data (without sensitive info)

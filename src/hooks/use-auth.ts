@@ -50,16 +50,9 @@ export function useAuth(): AuthState & AuthActions {
     if (process.env.NEXT_PUBLIC_APP_URL) {
       return process.env.NEXT_PUBLIC_APP_URL;
     }
-      return window.location.origin;
-    }
-    
-    // Server-side: use environment variables
-    if (process.env.NODE_ENV === 'production') {
-      return process.env.NEXT_PUBLIC_APP_URL || 'https://hafiportrait.photography';
-    }
     
     // Development fallback
-    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return 'http://localhost:3000';
   }, []);
 
   // Helper function for API calls with retry and timeout
@@ -108,6 +101,21 @@ export function useAuth(): AuthState & AuthActions {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       
       const response = await makeAuthRequest('/api/auth/me', { method: 'GET' });
+      
+      // Log auth check event for monitoring
+      if (typeof window !== 'undefined') {
+        fetch('/api/admin/session/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            session_id: 'current',
+            user_id: 0,
+            event_type: 'auth_check',
+            metadata: { timestamp: new Date().toISOString() }
+          })
+        }).catch(() => {}); // Silent fail for monitoring
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -261,16 +269,8 @@ export function useAuth(): AuthState & AuthActions {
     checkAuth();
   }, [checkAuth]);
   
-  // Session continuity improvements
+  // Timeout fallback to prevent infinite loading
   useEffect(() => {
-    // Periodic session validation (every 5 minutes)
-    const sessionCheck = setInterval(() => {
-      if (state.isAuthenticated) {
-        checkAuth();
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    // Timeout fallback to prevent infinite loading
     const timeout = setTimeout(() => {
       if (state.isLoading) {
         console.warn('Auth check timeout, setting loading to false');
@@ -281,13 +281,10 @@ export function useAuth(): AuthState & AuthActions {
           error: null
         }));
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // 5 second timeout
     
-    return () => {
-      clearTimeout(timeout);
-      clearInterval(sessionCheck);
-    };
-  }, [state.isLoading, state.isAuthenticated, checkAuth]);
+    return () => clearTimeout(timeout);
+  }, [state.isLoading]);
 
   return {
     ...state,

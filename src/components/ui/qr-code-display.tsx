@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Share2, QrCode } from 'lucide-react';
 import Image from 'next/image';
+import { copyToClipboard } from '@/utils/clipboard';
 
 interface QRCodeDisplayProps {
   qrCodeUrl: string | null;
@@ -22,9 +23,11 @@ export function QRCodeDisplay({ qrCodeUrl, shareableLink, eventName }: QRCodeDis
     }
   }, [copied]);
 
-  const handleCopyLink = () => {
-    if (shareableLink) {
-      navigator.clipboard.writeText(shareableLink);
+  const handleCopyLink = async () => {
+    if (!shareableLink) return;
+    
+    const success = await copyToClipboard(shareableLink);
+    if (success) {
       setCopied(true);
     }
   };

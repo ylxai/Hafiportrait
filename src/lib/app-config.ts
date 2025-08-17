@@ -9,16 +9,29 @@
  * the correct domain is used for links and QR codes
  */
 export function getAppBaseUrl(): string {
-  // In browser environment, we can use window.location
-  if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.host) {
-    return `${window.location.protocol}//${window.location.host}`;
+  // Server-side: Always use environment variables for consistent URL generation
+  if (typeof window === 'undefined') {
+    // In development, always use public IP for shareable links
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_URL_IP) {
+      return process.env.NEXT_PUBLIC_DEV_URL_IP;
+    }
+    
+    // Production: use configured URL
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (envUrl && envUrl !== 'http://localhost:3000' && !envUrl.includes('localhost')) {
+      return envUrl;
+    }
   }
 
-  // Server-side: Check environment variables in order of priority
-  // Skip localhost URLs in production environment
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl && envUrl !== 'http://localhost:3000' && !envUrl.includes('localhost')) {
-    return envUrl;
+  // Client-side: For copy operations, prefer public IP in development
+  if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.host) {
+    // In development, always use public IP for shareable links
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_URL_IP) {
+      return process.env.NEXT_PUBLIC_DEV_URL_IP;
+    }
+    
+    // Production: use current window location
+    return `${window.location.protocol}//${window.location.host}`;
   }
 
   // Check for Vercel deployment

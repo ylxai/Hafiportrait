@@ -92,17 +92,27 @@ export default function HeroSlideshow({
   const { data: photos, isLoading, error } = useQuery<SlideshowPhoto[]>({
     queryKey: ['slideshowPhotos'],
     queryFn: async () => {
+      console.log('Fetching slideshow photos...');
       const response = await fetch('/api/slideshow');
+      console.log('Slideshow API response status:', response.status);
       if (!response.ok) {
         throw new Error('Failed to fetch slideshow photos');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Slideshow photos received:', data);
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000, // Reduced to 1 minute for testing
+    refetchOnWindowFocus: true, // Enable refetch on focus for testing
+    refetchInterval: 30000, // Refetch every 30 seconds for testing
     select: (data) => {
-      // Limit to 3 photos for mobile performance
+      console.log('Selecting photos from data:', data);
+      // Limit slideshow photos for optimal performance
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      return isMobile ? data.slice(0, 3) : data.slice(0, 5);
+      // Limits: mobile 5 photos, desktop 10 photos
+      const selected = isMobile ? data.slice(0, 5) : data.slice(0, 10);
+      console.log('Selected photos for slideshow:', selected);
+      return selected;
     }
   });
 

@@ -15,22 +15,32 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Auth me endpoint called');
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('admin_session')?.value;
+    console.log('🍪 Session ID from cookie:', sessionId ? 'exists' : 'missing');
 
     if (!sessionId) {
       return corsErrorResponse('No active session', 401);
     }
 
-    // Validate session
-    const user = await validateSession(sessionId);
+    // Validate session with error handling
+    let user;
+    try {
+      user = await validateSession(sessionId);
+      console.log('🔍 Session validation result:', user ? 'valid user found' : 'no user found');
+    } catch (error) {
+      console.error('❌ Session validation error:', error);
+      return corsErrorResponse('Session validation failed', 500);
+    }
     
     if (!user) {
+      console.log('🚫 Invalid session, clearing cookie');
       // Clear invalid session cookie
       const cookieStoreForClear = await cookies();
       cookieStoreForClear.set('admin_session', '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Match login cookie setting
         sameSite: 'lax',
         maxAge: 0,
         path: '/'
