@@ -33,7 +33,18 @@ export class SessionAnalytics {
    * Log session event untuk tracking
    */
   static async logSessionEvent(event: Omit<SessionEvent, 'id' | 'timestamp'>) {
+    // Skip session logging in development or if disabled
+    if (process.env.NODE_ENV === 'development' || process.env.DISABLE_SESSION_LOGGING === 'true') {
+      return;
+    }
+
     try {
+      // Check if supabase is properly configured
+      if (!supabase) {
+        console.warn('Supabase not configured, skipping session event logging');
+        return;
+      }
+
       const { error } = await supabase
         .from('session_events')
         .insert({
@@ -42,10 +53,16 @@ export class SessionAnalytics {
         });
 
       if (error) {
-        console.error('Failed to log session event:', error);
+        // Only log error in development, silently fail in production
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Session event logging failed (table may not exist):', error.message);
+        }
       }
     } catch (error) {
-      console.error('Session event logging error:', error);
+      // Only log error in development, silently fail in production
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Session event logging error:', error);
+      }
     }
   }
 

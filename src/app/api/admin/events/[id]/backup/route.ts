@@ -62,7 +62,7 @@ export async function GET(
     
     if (backupId) {
       // Get specific backup status
-      const backupStatus = eventStorageManager.getBackupStatus(backupId);
+      const backupStatus = await eventStorageManager.getBackupStatus(backupId);
       
       if (!backupStatus) {
         return NextResponse.json({
@@ -77,7 +77,7 @@ export async function GET(
       });
     } else {
       // Get all backup statuses for this event
-      const allStatuses: any[] = eventStorageManager.getAllBackupStatuses();
+      const allStatuses: any[] = await eventStorageManager.getAllBackupStatuses();
       const eventBackups = allStatuses.filter((status: any) => status.eventId === eventId);
       
       return NextResponse.json({

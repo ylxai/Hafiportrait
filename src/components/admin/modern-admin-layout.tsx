@@ -15,7 +15,10 @@ import {
   Menu,
   X,
   Search,
-  Plus
+  Plus,
+  Activity,
+  AlertTriangle,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -124,6 +127,18 @@ export function ModernAdminLayout({
           action: () => onSectionChange('system-monitor')
         },
         {
+          id: 'system-alerts',
+          label: 'Alert Dashboard',
+          icon: AlertTriangle,
+          action: () => onSectionChange('system-alerts')
+        },
+        {
+          id: 'system-advanced',
+          label: 'Advanced Monitoring',
+          icon: BarChart3,
+          action: () => onSectionChange('system-advanced')
+        },
+        {
           id: 'system-dslr',
           label: 'DSLR Monitor',
           icon: Monitor,
@@ -198,7 +213,7 @@ export function ModernAdminLayout({
               <span className="text-white font-bold text-sm">HP</span>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-gray-900">HafiPortrait</h1>
+              <h1 className="text-xs md:text-sm font-semibold text-gray-900">HafiPortrait</h1>
               <p className="text-xs text-gray-500">Admin Panel</p>
             </div>
           </div>
@@ -328,7 +343,7 @@ export function ModernAdminLayout({
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-base md:text-lg font-semibold text-gray-900">Admin Dashboard</h1>
             <div className="w-10" /> {/* Spacer */}
           </div>
         </header>

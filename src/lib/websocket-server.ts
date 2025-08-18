@@ -312,7 +312,7 @@ class RealTimeWebSocketServer {
         const EventStorageManager = require('@/lib/event-storage-manager');
         const eventStorageManager = new EventStorageManager();
         
-        const allBackups = eventStorageManager.getAllBackupStatuses();
+        const allBackups = await eventStorageManager.getAllBackupStatuses();
         const activeBackups = allBackups.filter((b: any) => 
           b.status === 'backing_up' || b.status === 'initializing'
         );

@@ -18,6 +18,8 @@ import {
   MediaSlideshowSection,
   MediaEventsSection,
   SystemMonitorSection,
+  SystemAlertDashboardSection,
+  SystemAdvancedMonitoringSection,
   SystemDSLRSection,
   SystemBackupSection,
   SystemNotificationsSection,
@@ -48,6 +50,11 @@ export default function ModernAdminDashboard() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [isSlideshowPanelOpen, setIsSlideshowPanelOpen] = useState(false);
+  
+  // Event photo lightbox states
+  const [isEventLightboxOpen, setIsEventLightboxOpen] = useState(false);
+  const [selectedEventPhotoIndex, setSelectedEventPhotoIndex] = useState<number | null>(null);
+  const [selectedEventPhotosForLightbox, setSelectedEventPhotosForLightbox] = useState<any[]>([]);
 
   // Fetch admin stats
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
@@ -168,7 +175,7 @@ export default function ModernAdminDashboard() {
 
   const updateEventStatusMutation = useMutation({
     mutationFn: async ({ eventId, status }: { eventId: string; status: string }) => {
-      const response = await apiRequest("PATCH", `/api/admin/events/${eventId}/status`, { status });
+      const response = await apiRequest("PUT", `/api/admin/events/${eventId}/status`, { status });
       if (!response.ok) throw new Error('Failed to update event status');
       return response.json();
     },
@@ -295,6 +302,50 @@ export default function ModernAdminDashboard() {
     },
   });
 
+  // Delete event photo mutation
+  const deleteEventPhotoMutation = useMutation({
+    mutationFn: async (photoId: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/photos/event/${photoId}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Delete failed' }));
+        throw new Error(errorData.message || 'Delete failed');
+      }
+      return response.json();
+    },
+    onSuccess: (data, photoId) => {
+      // Invalidate admin queries
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      
+      // Invalidate event page queries for immediate real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/events', selectedEventForPhotos, 'photos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/events', selectedEventForPhotos] });
+      
+      // Force immediate refetch for event page
+      queryClient.refetchQueries({ queryKey: ['/api/events', selectedEventForPhotos, 'photos'] });
+      
+      // Broadcast event for immediate update across tabs
+      window.dispatchEvent(new CustomEvent('photoDeleted', { 
+        detail: { eventId: selectedEventForPhotos, photoId } 
+      }));
+      
+      toast({
+        title: "✅ Foto Event Berhasil Dihapus!",
+        description: "Foto telah dihapus dari galeri event.",
+      });
+    },
+    onError: (error: any, photoId) => {
+      // Revert lightbox state if delete failed
+      queryClient.refetchQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
+      
+      toast({
+        title: "❌ Gagal Menghapus Foto Event",
+        description: `Gagal menghapus foto: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Upload event photo mutation
   const uploadEventPhotoMutation = useMutation({
     mutationFn: async ({ file, albumName }: { file: File; albumName: string }) => {
@@ -303,20 +354,38 @@ export default function ModernAdminDashboard() {
       formData.append('uploaderName', 'Admin');
       formData.append('albumName', albumName);
       const response = await apiRequest("POST", `/api/events/${selectedEventForPhotos}/photos`, formData);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Upload failed');
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Invalidate admin queries
       queryClient.invalidateQueries({ queryKey: ['/api/admin/photos/event', selectedEventForPhotos] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      
+      // Invalidate event page queries for immediate real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/events', selectedEventForPhotos, 'photos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/events', selectedEventForPhotos] });
+      
+      // Force immediate refetch for event page
+      queryClient.refetchQueries({ queryKey: ['/api/events', selectedEventForPhotos, 'photos'] });
+      
+      // Broadcast event for immediate update across tabs
+      window.dispatchEvent(new CustomEvent('photoUploaded', { 
+        detail: { eventId: selectedEventForPhotos, fileName: variables.file.name } 
+      }));
+      
       toast({
         title: "✅ Foto Event Berhasil Diupload!",
-        description: "Foto telah ditambahkan ke galeri event.",
+        description: `Foto "${variables.file.name}" telah ditambahkan ke album ${variables.albumName}.`,
       });
     },
-    onError: () => {
+    onError: (error: any, variables) => {
       toast({
         title: "❌ Gagal Upload Foto Event",
-        description: "Terjadi kesalahan saat mengupload foto event.",
+        description: `Gagal mengupload "${variables.file.name}": ${error.message}`,
         variant: "destructive",
       });
     },
@@ -389,6 +458,35 @@ export default function ModernAdminDashboard() {
     setIsLightboxOpen(true);
   };
 
+  const handleEventPhotoClick = (index: number, albumPhotos: any[]) => {
+    // Validate input data
+    if (!albumPhotos || albumPhotos.length === 0 || index < 0 || index >= albumPhotos.length) {
+      console.warn('Invalid photo data for lightbox:', { index, albumPhotosLength: albumPhotos?.length });
+      return;
+    }
+    
+    // Filter out any invalid photos
+    const validPhotos = albumPhotos.filter(photo => photo && photo.id && photo.url);
+    
+    if (validPhotos.length === 0) {
+      console.warn('No valid photos found for lightbox');
+      return;
+    }
+    
+    // Adjust index if needed after filtering
+    const adjustedIndex = Math.min(index, validPhotos.length - 1);
+    
+    setSelectedEventPhotosForLightbox(validPhotos);
+    setSelectedEventPhotoIndex(adjustedIndex);
+    setIsEventLightboxOpen(true);
+  };
+
+  // Refresh function
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/admin/events'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+  };
+
   // Section props
   const sectionProps = {
     stats,
@@ -401,7 +499,8 @@ export default function ModernAdminDashboard() {
       updateEventStatusMutation.mutate({ eventId, status }),
     onEventSubmit: handleEventSubmit,
     isCreating: createEventMutation.isPending,
-    onCancel: () => setActiveSection('events-list')
+    onCancel: () => setActiveSection('events-list'),
+    onRefresh: handleRefresh
   };
 
   // Media section props
@@ -434,7 +533,8 @@ export default function ModernAdminDashboard() {
     onEventSelect: setSelectedEventForPhotos,
     onPhotoUpload: (file: File, albumName: string) => 
       uploadEventPhotoMutation.mutate({ file, albumName }),
-    onPhotoClick: handlePhotoClick
+    onPhotoClick: handleEventPhotoClick,
+    onPhotoDelete: (photoId: string) => deleteEventPhotoMutation.mutate(photoId)
   };
 
   // Render current section
@@ -456,6 +556,10 @@ export default function ModernAdminDashboard() {
         return <MediaEventsSection {...eventPhotosSectionProps} />;
       case 'system-monitor':
         return <SystemMonitorSection />;
+      case 'system-alerts':
+        return <SystemAlertDashboardSection />;
+      case 'system-advanced':
+        return <SystemAdvancedMonitoringSection />;
       case 'system-dslr':
         return <SystemDSLRSection />;
       case 'system-backup':
@@ -514,7 +618,7 @@ export default function ModernAdminDashboard() {
         </div>
       )}
 
-      {/* Photo Lightbox */}
+      {/* Homepage Photo Lightbox */}
       {isLightboxOpen && selectedPhotoIndex !== null && (
         <PhotoLightbox
           photos={homepagePhotos}
@@ -538,6 +642,69 @@ export default function ModernAdminDashboard() {
             console.log('Unlike photo:', photoId);
           }}
         />
+      )}
+
+      {/* Event Photo Lightbox */}
+      {isEventLightboxOpen && 
+       selectedEventPhotoIndex !== null && 
+       selectedEventPhotosForLightbox.length > 0 && 
+       selectedEventPhotoIndex < selectedEventPhotosForLightbox.length &&
+       selectedEventPhotosForLightbox[selectedEventPhotoIndex] && (
+        <div key={`lightbox-${selectedEventPhotosForLightbox.length}-${selectedEventPhotoIndex}`}>
+          <PhotoLightbox
+          photos={selectedEventPhotosForLightbox.filter(photo => photo && photo.id)}
+          currentIndex={Math.min(selectedEventPhotoIndex, selectedEventPhotosForLightbox.length - 1)}
+          onClose={() => {
+            // Safe close with timeout to prevent race conditions
+            setTimeout(() => {
+              setIsEventLightboxOpen(false);
+              setSelectedEventPhotoIndex(null);
+              setSelectedEventPhotosForLightbox([]);
+            }, 0);
+          }}
+          onDelete={(photoId) => {
+            if (confirm('Yakin ingin menghapus foto event ini secara permanen?')) {
+              // Immediately update lightbox state to prevent errors
+              const currentPhotos = [...selectedEventPhotosForLightbox];
+              const photoIndex = currentPhotos.findIndex(photo => photo?.id === photoId);
+              
+              if (photoIndex !== -1) {
+                const updatedPhotos = currentPhotos.filter(photo => photo?.id !== photoId);
+                
+                // Update state immediately
+                setSelectedEventPhotosForLightbox(updatedPhotos);
+                
+                // Handle index adjustment
+                if (updatedPhotos.length === 0) {
+                  // Close lightbox if no photos left
+                  setIsEventLightboxOpen(false);
+                  setSelectedEventPhotoIndex(null);
+                  setSelectedEventPhotosForLightbox([]);
+                } else {
+                  // Adjust index if needed
+                  const currentIndex = selectedEventPhotoIndex || 0;
+                  if (currentIndex >= updatedPhotos.length) {
+                    setSelectedEventPhotoIndex(updatedPhotos.length - 1);
+                  } else if (photoIndex <= currentIndex && currentIndex > 0) {
+                    setSelectedEventPhotoIndex(currentIndex - 1);
+                  }
+                }
+              }
+              
+              // Then perform the actual delete
+              deleteEventPhotoMutation.mutate(photoId);
+            }
+          }}
+          onLike={(photoId) => {
+            // Like functionality not implemented in admin panel
+            console.log('Like event photo:', photoId);
+          }}
+          onUnlike={(photoId) => {
+            // Unlike functionality not implemented in admin panel
+            console.log('Unlike event photo:', photoId);
+          }}
+          />
+        </div>
       )}
 
       {/* QR Code Dialog */}

@@ -62,10 +62,10 @@ export function QuickActionButtons({
             <Button
               key={index}
               onClick={action.action}
-              className={`${action.color} text-white h-16 flex flex-col items-center justify-center space-y-1`}
+              className={`${action.color} text-white h-16 flex flex-col items-center justify-center space-y-1 text-center`}
             >
-              <action.icon className="h-5 w-5" />
-              <span className="text-xs">{action.label}</span>
+              <action.icon className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="text-xs leading-tight">{action.label}</span>
             </Button>
           ))}
         </div>

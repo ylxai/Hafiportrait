@@ -32,6 +32,7 @@ import StatsCards from "./StatsCards";
 import { EventStatusSummary } from "./event-status-summary";
 import { AutoStatusManager } from "./auto-status-manager";
 import EventForm from "./EventForm";
+import EventList from "./EventList";
 import dynamic from 'next/dynamic';
 
 // Dynamic imports
@@ -40,6 +41,8 @@ const DSLRMonitor = dynamic(() => import("./dslr-monitor"), { ssr: false });
 const BackupStatusMonitor = dynamic(() => import("./backup-status-monitor").then(mod => ({ default: mod.BackupStatusMonitor })), { ssr: false });
 const SmartNotificationManager = dynamic(() => import("./smart-notification-manager").then(mod => ({ default: mod.SmartNotificationManager })), { ssr: false });
 const ColorPaletteSwitcher = dynamic(() => import("../ui/color-palette-switcher").then(mod => mod.ColorPaletteSwitcher), { ssr: false });
+const AlertDashboard = dynamic(() => import("./alert-dashboard").then(mod => ({ default: mod.AlertDashboard })), { ssr: false });
+const RealTimeMonitor = dynamic(() => import("./real-time-monitor").then(mod => ({ default: mod.RealTimeMonitor })), { ssr: false });
 
 interface DashboardSectionProps {
   stats?: any;
@@ -49,6 +52,7 @@ interface DashboardSectionProps {
   onDeleteEvent?: (eventId: string) => void;
   onShowQRCode?: (event: any) => void;
   onUpdateEventStatus?: (eventId: string, status: string) => void;
+  onRefresh?: () => void;
 }
 
 // Dashboard Overview
@@ -56,9 +60,9 @@ export function DashboardSection({ stats, events = [] }: DashboardSectionProps) 
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Selamat Datang di Admin Dashboard</h1>
-        <p className="text-blue-100">Kelola event dan galeri foto HafiPortrait Photography</p>
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 md:p-6 text-white">
+        <h1 className="text-lg md:text-2xl font-bold mb-2">Selamat Datang di Admin Dashboard</h1>
+        <p className="text-sm md:text-base text-blue-100">Kelola event dan galeri foto HafiPortrait Photography</p>
       </div>
 
       {/* Quick Stats */}
@@ -178,85 +182,56 @@ export function EventsListSection({
   onEditEvent, 
   onDeleteEvent, 
   onShowQRCode, 
-  onUpdateEventStatus 
+  onUpdateEventStatus,
+  onRefresh 
 }: DashboardSectionProps) {
   console.log('EventsListSection props:', { onCreateEvent, events: events.length });
+  
+  const handleBackupComplete = (eventId: string, result: any) => {
+    console.log('Backup completed for event:', eventId, result);
+  };
+
+  const handleArchiveComplete = (eventId: string, result: any) => {
+    console.log('Archive completed for event:', eventId, result);
+  };
+
+  const handleStatusChange = (eventId: string, newStatus: string) => {
+    if (onUpdateEventStatus) {
+      onUpdateEventStatus(eventId, newStatus);
+    }
+  };
+
+  const handleRefresh = () => {
+    // Use the onRefresh prop passed from parent component
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Daftar Event</h1>
-        <Button onClick={() => onCreateEvent?.()}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-xl md:text-2xl font-bold">Daftar Event</h1>
+        <Button onClick={() => onCreateEvent?.()} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
-          Event Baru
+          <span className="hidden sm:inline">Event Baru</span>
+          <span className="sm:hidden">Buat Event</span>
         </Button>
       </div>
 
       <StatsCards stats={{ totalEvents: events.length }} />
       <EventStatusSummary events={events} />
-      <AutoStatusManager events={events} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Semua Event</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MobileDataTable
-            data={events}
-            columns={[
-              {
-                key: 'name',
-                label: 'Nama Event',
-                priority: 'high',
-                render: (event) => (
-                  <div>
-                    <p className="font-medium">{event.name}</p>
-                    <p className="text-xs text-gray-500">{event.is_premium ? 'Premium' : 'Reguler'}</p>
-                  </div>
-                )
-              },
-              {
-                key: 'date',
-                label: 'Tanggal',
-                priority: 'high',
-                render: (event) => new Date(event.date).toLocaleDateString('id-ID')
-              },
-              {
-                key: 'status',
-                label: 'Status',
-                priority: 'medium',
-                render: (event) => {
-                  const statusConfig = {
-                    active: { label: 'Aktif', class: 'bg-green-100 text-green-700' },
-                    completed: { label: 'Selesai', class: 'bg-blue-100 text-blue-700' },
-                    draft: { label: 'Draft', class: 'bg-gray-100 text-gray-700' },
-                    paused: { label: 'Dijeda', class: 'bg-yellow-100 text-yellow-700' }
-                  };
-                  const config = statusConfig[event.status as keyof typeof statusConfig] || statusConfig.draft;
-                  return (
-                    <span className={`px-2 py-1 text-xs rounded-full ${config.class}`}>
-                      {config.label}
-                    </span>
-                  );
-                }
-              }
-            ]}
-            actions={(event) => (
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => onShowQRCode?.(event)}>
-                  <QrCode className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => onEditEvent?.(event)}>
-                  <Edit className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => onDeleteEvent?.(event.id)}>
-                  <Trash className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
-            emptyMessage="Belum ada event"
-          />
-        </CardContent>
-      </Card>
+      {/* Use EventList component with backup and status management */}
+      <EventList
+        events={events}
+        onEdit={onEditEvent || (() => {})}
+        onDelete={onDeleteEvent || (() => {})}
+        onBackupComplete={handleBackupComplete}
+        onArchiveComplete={handleArchiveComplete}
+        onStatusChange={handleStatusChange}
+        onRefresh={handleRefresh}
+      />
     </div>
   );
 }
@@ -287,11 +262,12 @@ export function MediaHomepageSection({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Galeri Homepage</h1>
-        <Button onClick={() => setIsUploadOpen(true)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-xl md:text-2xl font-bold">Galeri Homepage</h1>
+        <Button onClick={() => setIsUploadOpen(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
-          Upload Foto
+          <span className="hidden sm:inline">Upload Foto</span>
+          <span className="sm:hidden">Upload</span>
         </Button>
       </div>
 
@@ -319,8 +295,8 @@ export function MediaHomepageSection({
                 Ukuran maksimal 10MB per file. Format: JPG, PNG, GIF
               </p>
             </div>
-            <div className="flex space-x-2">
-              <Button onClick={() => setIsUploadOpen(false)} variant="outline">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => setIsUploadOpen(false)} variant="outline" className="w-full sm:w-auto">
                 Batal
               </Button>
             </div>
@@ -353,7 +329,7 @@ export function MediaHomepageSection({
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="opacity-0 group-hover:opacity-100"
+                      className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (confirm('Yakin ingin menghapus foto ini?')) {
@@ -400,17 +376,18 @@ export function MediaSlideshowSection({
 }) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Hero Slideshow</h1>
-          <p className="text-gray-600">Kelola foto untuk slideshow di homepage</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl font-bold">Hero Slideshow</h1>
+          <p className="text-sm md:text-base text-gray-600">Kelola foto untuk slideshow di homepage</p>
         </div>
         <Button 
           onClick={() => onPanelToggle?.(true)}
-          className="bg-blue-500 hover:bg-blue-600"
+          className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
         >
           <Settings className="w-4 h-4 mr-2" />
-          Kelola Slideshow
+          <span className="hidden sm:inline">Kelola Slideshow</span>
+          <span className="sm:hidden">Kelola</span>
         </Button>
       </div>
 
@@ -440,6 +417,7 @@ export function MediaSlideshowSection({
                       size="sm"
                       variant="destructive"
                       onClick={() => onRemoveFromSlideshow?.(photo.id)}
+                      className="h-8 w-8 p-0"
                     >
                       <Trash className="w-3 h-3" />
                     </Button>
@@ -498,7 +476,8 @@ export function MediaEventsSection({
   isLoading = false,
   onEventSelect,
   onPhotoUpload,
-  onPhotoClick
+  onPhotoClick,
+  onPhotoDelete
 }: {
   events?: any[];
   eventPhotos?: any[];
@@ -506,30 +485,91 @@ export function MediaEventsSection({
   isLoading?: boolean;
   onEventSelect?: (eventId: string) => void;
   onPhotoUpload?: (file: File, albumName: string) => void;
-  onPhotoClick?: (index: number) => void;
+  onPhotoClick?: (index: number, albumPhotos: any[]) => void;
+  onPhotoDelete?: (photoId: string) => void;
 }) {
   const [selectedAlbum, setSelectedAlbum] = useState("Official");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        alert("Ukuran file maksimal 10MB");
-        return;
-      }
-      onPhotoUpload?.(file, selectedAlbum);
-      setIsUploadOpen(false);
+    if (files.length === 0) return;
+
+    // Validate file sizes
+    const invalidFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+    if (invalidFiles.length > 0) {
+      alert(`${invalidFiles.length} file(s) melebihi ukuran maksimal 10MB dan akan dilewati.`);
     }
+
+    const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024);
+    if (validFiles.length === 0) {
+      alert("Tidak ada file yang valid untuk diupload.");
+      return;
+    }
+
+    setIsUploading(true);
+    
+    // Upload files one by one with progress tracking
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const fileKey = `${file.name}-${i}`;
+      
+      try {
+        // Update progress
+        setUploadProgress(prev => ({
+          ...prev,
+          [fileKey]: 0
+        }));
+
+        // Simulate progress (in real implementation, you'd get this from upload API)
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [fileKey]: Math.min((prev[fileKey] || 0) + 20, 90)
+          }));
+        }, 200);
+
+        // Upload file
+        await onPhotoUpload?.(file, selectedAlbum);
+        
+        // Complete progress
+        clearInterval(progressInterval);
+        setUploadProgress(prev => ({
+          ...prev,
+          [fileKey]: 100
+        }));
+
+        // Small delay between uploads to prevent overwhelming the server
+        if (i < validFiles.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        setUploadProgress(prev => ({
+          ...prev,
+          [fileKey]: -1 // Error state
+        }));
+      }
+    }
+
+    // Clean up and close modal after a short delay
+    setTimeout(() => {
+      setUploadProgress({});
+      setIsUploading(false);
+      setIsUploadOpen(false);
+    }, 1500);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Foto Event</h1>
-          <p className="text-gray-600">Upload dan kelola foto untuk event tertentu</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl font-bold">Foto Event</h1>
+          <p className="text-sm md:text-base text-gray-600">Upload dan kelola foto untuk event tertentu</p>
         </div>
       </div>
 
@@ -559,9 +599,10 @@ export function MediaEventsSection({
             
             {selectedEventForPhotos && (
               <div className="flex gap-2">
-                <Button onClick={() => setIsUploadOpen(true)}>
+                <Button onClick={() => setIsUploadOpen(true)} className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
-                  Upload Foto
+                  <span className="hidden sm:inline">Upload Foto</span>
+                  <span className="sm:hidden">Upload</span>
                 </Button>
               </div>
             )}
@@ -597,18 +638,64 @@ export function MediaEventsSection({
               <Input
                 id="event-photo-input"
                 type="file"
+                multiple
                 accept="image/*"
                 onChange={handleFileUpload}
                 className="mt-1"
+                disabled={isUploading}
               />
               <p className="text-sm text-gray-500 mt-1">
-                Ukuran maksimal 10MB. Format: JPG, PNG, GIF
+                Ukuran maksimal 10MB per file. Format: JPG, PNG, GIF. Bisa pilih multiple files.
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setIsUploadOpen(false)} variant="outline">
-                Batal
+
+            {/* Upload Progress */}
+            {Object.keys(uploadProgress).length > 0 && (
+              <div className="space-y-2">
+                <Label>Progress Upload:</Label>
+                <div className="max-h-32 overflow-y-auto space-y-2">
+                  {Object.entries(uploadProgress).map(([fileKey, progress]) => {
+                    const fileName = fileKey.split('-').slice(0, -1).join('-');
+                    return (
+                      <div key={fileKey} className="flex items-center gap-2 text-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate font-medium">{fileName}</div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                progress === -1 ? 'bg-red-500' : 
+                                progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                              }`}
+                              style={{ width: `${Math.max(0, progress)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 min-w-0">
+                          {progress === -1 ? 'Error' : 
+                           progress === 100 ? 'Done' : `${progress}%`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                onClick={() => setIsUploadOpen(false)} 
+                variant="outline"
+                disabled={isUploading}
+                className="w-full sm:w-auto"
+              >
+                {isUploading ? 'Uploading...' : 'Batal'}
               </Button>
+              {isUploading && (
+                <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  Mengupload foto...
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -652,18 +739,34 @@ export function MediaEventsSection({
                         <div 
                           key={photo.id} 
                           className="relative group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                          onClick={() => onPhotoClick?.(index)}
+                          onClick={() => onPhotoClick?.(index, albumPhotos)}
                         >
                           <img
                             src={photo.url}
                             alt={photo.original_name}
                             className="w-full aspect-square object-cover"
                           />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all">
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all">
                             <div className="absolute bottom-2 left-2 right-2">
                               <div className="bg-black/70 text-white text-xs px-2 py-1 rounded truncate">
                                 {photo.uploader_name || 'Admin'}
                               </div>
+                            </div>
+                            {/* Delete Button */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm('Yakin ingin menghapus foto ini secara permanen?')) {
+                                    onPhotoDelete?.(photo.id);
+                                  }
+                                }}
+                              >
+                                <Trash className="w-3 h-3" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -679,11 +782,12 @@ export function MediaEventsSection({
               <p>Belum ada foto di event ini</p>
               <Button 
                 onClick={() => setIsUploadOpen(true)}
-                className="mt-4"
+                className="mt-4 w-full sm:w-auto"
                 variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Upload Foto Pertama
+                <span className="hidden sm:inline">Upload Foto Pertama</span>
+                <span className="sm:hidden">Upload</span>
               </Button>
             </div>
           )}
@@ -697,8 +801,100 @@ export function MediaEventsSection({
 export function SystemMonitorSection() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">System Monitor</h1>
-      <SystemMonitor />
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold">System Monitor</h1>
+        <p className="text-sm md:text-base text-gray-600">Comprehensive system monitoring with real-time metrics, health checks, performance analysis, DSLR status, and security monitoring</p>
+      </div>
+      <RealTimeMonitor />
+    </div>
+  );
+}
+
+export function SystemRealTimeMonitorSection() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Real-time System Monitor</h1>
+      <p className="text-gray-600">Monitor sistem secara real-time dengan metrics lengkap</p>
+      <RealTimeMonitor />
+    </div>
+  );
+}
+
+export function SystemAlertDashboardSection() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold">Alert Management</h1>
+        <p className="text-sm md:text-base text-gray-600">Kelola alerts dan notifikasi sistem</p>
+      </div>
+      <AlertDashboard />
+    </div>
+  );
+}
+
+export function SystemAdvancedMonitoringSection() {
+  const [activeTab, setActiveTab] = useState('realtime');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl font-bold">Advanced Monitoring</h1>
+          <p className="text-sm md:text-base text-gray-600">Monitoring sistem lengkap dengan real-time metrics dan alert management</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button
+            variant={activeTab === 'realtime' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('realtime')}
+            className="w-full sm:w-auto"
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Real-time
+          </Button>
+          <Button
+            variant={activeTab === 'alerts' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('alerts')}
+            className="w-full sm:w-auto"
+          >
+            <Monitor className="h-4 w-4 mr-2" />
+            Alerts
+          </Button>
+        </div>
+      </div>
+
+      {activeTab === 'realtime' && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-blue-500" />
+                <span>Real-time System Metrics</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RealTimeMonitor />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'alerts' && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Monitor className="h-5 w-5 text-red-500" />
+                <span>Alert Dashboard</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AlertDashboard />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -706,7 +902,7 @@ export function SystemMonitorSection() {
 export function SystemDSLRSection() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">DSLR Monitor</h1>
+      <h1 className="text-xl md:text-2xl font-bold">DSLR Monitor</h1>
       <DSLRMonitor />
     </div>
   );
@@ -715,7 +911,7 @@ export function SystemDSLRSection() {
 export function SystemBackupSection() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Backup Status</h1>
+      <h1 className="text-xl md:text-2xl font-bold">Backup Status</h1>
       <BackupStatusMonitor />
     </div>
   );
@@ -724,7 +920,7 @@ export function SystemBackupSection() {
 export function SystemNotificationsSection({ events = [] }: DashboardSectionProps) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Notifications</h1>
+      <h1 className="text-xl md:text-2xl font-bold">Notifications</h1>
       <SmartNotificationManager events={events} />
     </div>
   );
@@ -734,18 +930,20 @@ export function SystemNotificationsSection({ events = [] }: DashboardSectionProp
 export function SettingsThemeSection() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tema & Tampilan</h1>
+      <h1 className="text-xl md:text-2xl font-bold">Tema & Tampilan</h1>
       <Card>
         <CardHeader>
           <CardTitle>Pengaturan Tema</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
               <p className="font-medium">Pilih Tema Warna</p>
               <p className="text-sm text-gray-500">Ubah skema warna website</p>
             </div>
-            <ColorPaletteSwitcher />
+            <div className="w-full sm:w-auto">
+              <ColorPaletteSwitcher />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -756,7 +954,7 @@ export function SettingsThemeSection() {
 export function SettingsProfileSection({ user }: { user: any }) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Profile Settings</h1>
+      <h1 className="text-xl md:text-2xl font-bold">Profile Settings</h1>
       <Card>
         <CardHeader>
           <CardTitle>Informasi Profile</CardTitle>
@@ -790,16 +988,18 @@ export function EventsCreateSection({
 }) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Buat Event Baru</h1>
-          <p className="text-gray-600">Tambahkan event photography baru</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl font-bold">Buat Event Baru</h1>
+          <p className="text-sm md:text-base text-gray-600">Tambahkan event photography baru</p>
         </div>
         <Button 
           onClick={() => onCancel?.()}
           variant="outline"
+          className="w-full sm:w-auto"
         >
-          Kembali ke Daftar
+          <span className="hidden sm:inline">Kembali ke Daftar</span>
+          <span className="sm:hidden">Kembali</span>
         </Button>
       </div>
       
@@ -824,7 +1024,7 @@ export function EventsCreateSection({
 export function EventsStatusSection({ events = [] }: DashboardSectionProps) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Status Manager</h1>
+      <h1 className="text-xl md:text-2xl font-bold">Status Manager</h1>
       <EventStatusSummary events={events} />
       <AutoStatusManager events={events} />
     </div>

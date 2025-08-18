@@ -16,7 +16,7 @@ class EventStorageManager {
     this.config = {
       // Google Drive backup settings
       googleDrive: {
-        backupFolder: 'HafiPortrait-EventBackups',
+        backupFolder: process.env.GOOGLE_DRIVE_FOLDER_NAME || 'HafiPortrait-Photos',
         compressionQuality: 0.90, // High quality for archival
         maxConcurrentUploads: 3,
         retryAttempts: 3
@@ -153,7 +153,7 @@ class EventStorageManager {
   }
 
   /**
-   * Create folder in Google Drive
+   * Create folder in Google Drive with proper hierarchy
    */
   async createGoogleDriveFolder(folderName) {
     try {
@@ -161,26 +161,40 @@ class EventStorageManager {
         await this.smartStorageManager.initializeProviders();
       }
       
-      // First ensure the backup parent folder exists
-      let parentFolderId = null;
+      // Create folder hierarchy: HafiPortrait-Photos/EventBackups/Event_xxx
+      let mainFolderId = null;
+      let backupFolderId = null;
+      
       try {
-        const parentFolder = await this.smartStorageManager.googleDrive.createFolder(
+        // 1. Ensure main folder exists (HafiPortrait-Photos)
+        const mainFolder = await this.smartStorageManager.googleDrive.createFolder(
           this.config.googleDrive.backupFolder
         );
-        parentFolderId = parentFolder.id;
-        console.log(`✅ Parent backup folder ready: ${this.config.googleDrive.backupFolder}`);
+        mainFolderId = mainFolder.id;
+        console.log(`✅ Main folder ready: ${this.config.googleDrive.backupFolder}`);
+        
+        // 2. Ensure EventBackups subfolder exists
+        const backupFolder = await this.smartStorageManager.googleDrive.createFolder(
+          'EventBackups',
+          mainFolderId
+        );
+        backupFolderId = backupFolder.id;
+        console.log(`✅ EventBackups subfolder ready`);
+        
       } catch (error) {
-        console.log(`⚠️ Parent folder creation failed, using root: ${error.message}`);
+        console.log(`⚠️ Folder hierarchy creation failed, using root: ${error.message}`);
         // Continue with root folder
       }
       
-      // Create the event-specific folder
+      // 3. Create the event-specific folder inside EventBackups
       const folder = await this.smartStorageManager.googleDrive.createFolder(
         folderName,
-        parentFolderId
+        backupFolderId || mainFolderId
       );
       
+      console.log(`✅ Event folder created: ${this.config.googleDrive.backupFolder}/EventBackups/${folderName}`);
       return folder;
+      
     } catch (error) {
       console.error(`❌ Failed to create Google Drive folder ${folderName}:`, error);
       throw error;
@@ -315,20 +329,96 @@ class EventStorageManager {
   }
 
   /**
-   * Get backup status for an event
+   * Get backup status for an event (with database fallback)
    */
-  getBackupStatus(backupId) {
-    return this.backupStatus.get(backupId) || null;
+  async getBackupStatus(backupId) {
+    // First check in-memory cache
+    const memoryStatus = this.backupStatus.get(backupId);
+    if (memoryStatus) {
+      return memoryStatus;
+    }
+
+    // Fallback to database lookup
+    try {
+      const { smartDatabase } = await import('./database-with-smart-storage');
+      const { supabaseAdmin } = await import('./supabase');
+      
+      const { data: events, error } = await supabaseAdmin
+        .from('events')
+        .select('*')
+        .eq('backup_id', backupId)
+        .limit(1);
+      
+      if (error) {
+        console.warn('Database query error:', error);
+        return null;
+      }
+      
+      if (events && events.length > 0) {
+        const eventData = events[0];
+        return {
+          backupId,
+          eventId: eventData.id,
+          status: eventData.is_archived ? 'completed' : 'unknown',
+          googleDriveFolderId: eventData.google_drive_backup_url ? 'archived' : null,
+          googleDriveFolderUrl: eventData.google_drive_backup_url,
+          archivedAt: eventData.archived_at
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to get backup status from database:', error);
+    }
+
+    return null;
   }
 
   /**
-   * Get all backup statuses
+   * Get all backup statuses (with database fallback)
    */
-  getAllBackupStatuses() {
-    return Array.from(this.backupStatus.entries()).map(([id, status]) => ({
+  async getAllBackupStatuses() {
+    // Get in-memory statuses
+    const memoryStatuses = Array.from(this.backupStatus.entries()).map(([id, status]) => ({
       backupId: id,
       ...status
     }));
+
+    // Get archived events from database
+    try {
+      const { supabaseAdmin } = await import('./supabase');
+      
+      const { data: archivedEvents, error } = await supabaseAdmin
+        .from('events')
+        .select('*')
+        .not('backup_id', 'is', null)
+        .order('archived_at', { ascending: false });
+      
+      if (error) {
+        console.warn('Database query error:', error);
+        return memoryStatuses;
+      }
+      
+      const dbStatuses = (archivedEvents || []).map(event => ({
+        backupId: event.backup_id,
+        eventId: event.id,
+        status: event.is_archived ? 'completed' : 'unknown',
+        googleDriveFolderId: event.google_drive_backup_url ? 'archived' : null,
+        googleDriveFolderUrl: event.google_drive_backup_url,
+        archivedAt: event.archived_at
+      }));
+
+      // Combine and deduplicate
+      const allStatuses = [...memoryStatuses];
+      dbStatuses.forEach(dbStatus => {
+        if (!allStatuses.find(s => s.backupId === dbStatus.backupId)) {
+          allStatuses.push(dbStatus);
+        }
+      });
+
+      return allStatuses;
+    } catch (error) {
+      console.warn('Failed to get backup statuses from database:', error);
+      return memoryStatuses;
+    }
   }
 
   /**
@@ -338,7 +428,7 @@ class EventStorageManager {
     try {
       console.log(`🗄️ Archiving event ${eventId} after backup ${backupId}`);
       
-      const backupStatus = this.getBackupStatus(backupId);
+      const backupStatus = await this.getBackupStatus(backupId);
       if (!backupStatus || backupStatus.status !== 'completed') {
         throw new Error('Cannot archive event: backup not completed successfully');
       }

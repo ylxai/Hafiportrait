@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,26 @@ export function SlideshowPanel({
 }: SlideshowPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'current' | 'add'>('current');
+
+  // Load panel state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('slideshow-panel-state');
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setSearchQuery(parsed.searchQuery || '');
+        setActiveTab(parsed.activeTab || 'current');
+      } catch (error) {
+        console.error('Failed to load slideshow panel state:', error);
+      }
+    }
+  }, []);
+
+  // Save panel state when it changes
+  useEffect(() => {
+    const state = { searchQuery, activeTab };
+    localStorage.setItem('slideshow-panel-state', JSON.stringify(state));
+  }, [searchQuery, activeTab]);
 
   // Filter photos based on search
   const filteredHomepagePhotos = homepagePhotos.filter(photo =>

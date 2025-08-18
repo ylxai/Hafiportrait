@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useApiWithRecovery } from '@/hooks/use-error-recovery';
+import AdminErrorBoundary from '@/components/error/AdminErrorBoundary';
+import { NotificationManagerFallback, NetworkErrorFallback } from '@/components/admin/fallback-components';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +79,7 @@ interface Subscriber {
   lastSeen: string;
 }
 
-export default function NotificationManager() {
+function NotificationManagerContent() {
   const [activeTab, setActiveTab] = useState<'settings' | 'templates' | 'history' | 'subscribers'>('settings');
   const [isLoading, setIsLoading] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -97,16 +100,69 @@ export default function NotificationManager() {
     }
   });
 
-  // Auto-save settings when changed
+  // Use error recovery hook for loading settings
+  const {
+    data: loadedSettings,
+    error: loadError,
+    isLoading: isLoadingSettings,
+    retry: retryLoad,
+    canRetry: canRetryLoad
+  } = useApiWithRecovery('/api/admin/notifications/settings', {}, {
+    maxRetries: 3,
+    retryDelay: 2000,
+    fallbackData: settings,
+    onError: (error, retryCount) => {
+      console.error(`Failed to load notification settings (attempt ${retryCount}):`, error);
+      
+      // Try localStorage fallback on first error
+      if (retryCount === 1) {
+        try {
+          const savedSettings = localStorage.getItem('notification-settings');
+          if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          }
+        } catch (localError) {
+          console.error('localStorage fallback also failed:', localError);
+        }
+      }
+    },
+    onRecovery: (retryCount) => {
+      console.log(`✅ Notification settings loaded after ${retryCount} retries`);
+    }
+  });
+
+  // Update settings when data is loaded
+  useEffect(() => {
+    if (loadedSettings && !loadError) {
+      setSettings(prev => ({ ...prev, ...loadedSettings }));
+    }
+  }, [loadedSettings, loadError]);
+
+  // Auto-save settings when changed with API integration
   useEffect(() => {
     const saveSettings = async () => {
       setIsLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setLastSaved(new Date());
+        // Save to API first
+        const response = await fetch('/api/admin/notifications/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+
+        if (response.ok) {
+          // Also save to localStorage as backup
+          localStorage.setItem('notification-settings', JSON.stringify(settings));
+          setLastSaved(new Date());
+        } else {
+          throw new Error('API save failed');
+        }
       } catch (error) {
-        console.error('Failed to save settings:', error);
+        console.error('Failed to save notification settings:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('notification-settings', JSON.stringify(settings));
+        setLastSaved(new Date());
       } finally {
         setIsLoading(false);
       }
@@ -324,6 +380,11 @@ export default function NotificationManager() {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Show network error fallback if loading failed
+  if (loadError && !canRetryLoad) {
+    return <NetworkErrorFallback onRetry={retryLoad} componentName="Notification Manager" />;
+  }
 
   return (
     <div className="space-y-6">
@@ -973,5 +1034,18 @@ export default function NotificationManager() {
         </Card>
       )}
     </div>
+  );
+}
+
+// Main component with error boundary
+export default function NotificationManager() {
+  return (
+    <AdminErrorBoundary 
+      componentName="Notification Manager"
+      fallback={<NotificationManagerFallback />}
+      showDetails={process.env.NODE_ENV === 'development'}
+    >
+      <NotificationManagerContent />
+    </AdminErrorBoundary>
   );
 }

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const eventStorageManager = new EventStorageManager();
     
     // Get all backup statuses
-    const allBackups: any[] = eventStorageManager.getAllBackupStatuses();
+    const allBackups: any[] = await eventStorageManager.getAllBackupStatuses();
     
     // Calculate summary statistics
     const summary = {

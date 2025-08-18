@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AdminErrorBoundary } from '@/components/error';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -75,7 +76,7 @@ interface DSLRSettings {
   connectionCheck: number;
 }
 
-export default function DSLRMonitor() {
+function DSLRMonitorContent() {
   // Real-time data with automatic provider selection
   const { 
     isConnected: wsConnected, 
@@ -102,14 +103,14 @@ export default function DSLRMonitor() {
     totalUploaded: 0,
     failedUploads: 0,
     lastUpload: null,
-    watchFolder: 'C:/DCIM/100NIKON',
+    watchFolder: process.platform === 'win32' ? 'C:/DCIM/100NIKON' : '/media/DCIM/100NIKON',
     eventId: '',
     uploaderName: 'Official Photographer',
     queueSize: 0,
     uploadSpeed: 0,
     serviceRunning: false,
     lastHeartbeat: null,
-    cameraModel: 'NIKON_D7100',
+    cameraModel: 'Auto-detect',
     autoDetect: true,
     backupEnabled: true,
     notificationsEnabled: true,
@@ -141,20 +142,118 @@ export default function DSLRMonitor() {
   const [useRealtime, setUseRealtime] = useState(true);
 
   // DSLR Settings handlers
-  const handleDslrSettingsChange = (key: keyof DSLRSettings, value: any) => {
+  const handleDslrSettingsChange = async (key: keyof DSLRSettings, value: any) => {
     setDslrSettings(prev => ({ ...prev, [key]: value }));
     setHasUnsavedSettings(true);
+
+    // Special handling for autoUpload - immediately sync with service control
+    if (key === 'autoUpload') {
+      try {
+        const action = value ? 'start' : 'stop';
+        const response = await fetch('/api/dslr/control', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setStats(prev => ({ 
+            ...prev, 
+            serviceRunning: data.state.isRunning,
+            isProcessing: data.state.isRunning ? prev.isProcessing : false
+          }));
+          
+          // Update settings state to match
+          setSettings(prev => ({ ...prev, autoUpload: data.state.isRunning }));
+          
+          // Show notification
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('admin-notification', {
+              detail: {
+                type: 'success',
+                message: `DSLR service ${action}ed successfully`
+              }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error toggling DSLR service:', error);
+        // Revert the change if API call failed
+        setDslrSettings(prev => ({ ...prev, autoUpload: !value }));
+      }
+    }
   };
 
   const handleSaveDslrSettings = async () => {
     try {
-      // Save to API or localStorage
-      localStorage.setItem('dslr-settings', JSON.stringify(dslrSettings));
-      setHasUnsavedSettings(false);
-      // Show success notification
-      console.log('DSLR settings saved successfully');
+      // Save to API first
+      const response = await fetch('/api/dslr/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'update_settings',
+          settings: {
+            watchFolder: dslrSettings.watchFolder,
+            cameraModel: dslrSettings.cameraModel,
+            autoDetect: dslrSettings.autoDetect,
+            backupEnabled: dslrSettings.backupEnabled,
+            notificationsEnabled: dslrSettings.notificationsEnabled,
+            watermarkEnabled: dslrSettings.watermarkEnabled
+          }
+        })
+      });
+
+      if (response.ok) {
+        // Also save to localStorage as backup
+        localStorage.setItem('dslr-settings', JSON.stringify(dslrSettings));
+        setHasUnsavedSettings(false);
+        
+        // Update stats to reflect saved settings
+        setStats(prev => ({
+          ...prev,
+          watchFolder: dslrSettings.watchFolder,
+          cameraModel: dslrSettings.cameraModel,
+          autoDetect: dslrSettings.autoDetect,
+          backupEnabled: dslrSettings.backupEnabled,
+          notificationsEnabled: dslrSettings.notificationsEnabled,
+          watermarkEnabled: dslrSettings.watermarkEnabled
+        }));
+        
+        // Show success notification
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('admin-notification', {
+            detail: {
+              type: 'success',
+              message: 'DSLR configuration saved successfully'
+            }
+          }));
+        }
+        
+        console.log('✅ DSLR settings saved successfully');
+      } else {
+        throw new Error('Failed to save to API');
+      }
     } catch (error) {
       console.error('Failed to save DSLR settings:', error);
+      
+      // Still save to localStorage as fallback
+      localStorage.setItem('dslr-settings', JSON.stringify(dslrSettings));
+      setHasUnsavedSettings(false);
+      
+      // Show warning notification
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('admin-notification', {
+          detail: {
+            type: 'warning',
+            message: 'Settings saved locally only (API unavailable)'
+          }
+        }));
+      }
     }
   };
 
@@ -175,8 +274,55 @@ export default function DSLRMonitor() {
     }
   };
 
-  // Fetch available events for dropdown
+  // Load saved DSLR settings from API and localStorage on component mount
   useEffect(() => {
+    const loadDslrSettings = async () => {
+      try {
+        // First try to get from API
+        const response = await fetch('/api/dslr/status');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update dslrSettings from API data
+          setDslrSettings(prev => ({
+            ...prev,
+            autoUpload: data.serviceRunning || false,
+            watchFolder: data.watchFolder || prev.watchFolder,
+            cameraModel: data.cameraModel || prev.cameraModel,
+            autoDetect: data.autoDetect !== undefined ? data.autoDetect : prev.autoDetect,
+            backupEnabled: data.backupEnabled !== undefined ? data.backupEnabled : prev.backupEnabled,
+            notificationsEnabled: data.notificationsEnabled !== undefined ? data.notificationsEnabled : prev.notificationsEnabled,
+            watermarkEnabled: data.watermarkEnabled !== undefined ? data.watermarkEnabled : prev.watermarkEnabled
+          }));
+          
+          // Also update settings state
+          setSettings(prev => ({
+            ...prev,
+            autoUpload: data.serviceRunning || false,
+            eventId: data.eventId || prev.eventId,
+            uploaderName: data.uploaderName || prev.uploaderName,
+            watchFolder: data.watchFolder || prev.watchFolder
+          }));
+        }
+        
+        // Fallback to localStorage if API fails
+        const savedSettings = localStorage.getItem('dslr-settings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setDslrSettings(prev => ({ ...prev, ...parsed }));
+        }
+      } catch (error) {
+        console.error('Failed to load DSLR settings:', error);
+        
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('dslr-settings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setDslrSettings(prev => ({ ...prev, ...parsed }));
+        }
+      }
+    };
+
     const fetchEvents = async () => {
       try {
         const response = await fetch('/api/admin/events');
@@ -189,6 +335,7 @@ export default function DSLRMonitor() {
       }
     };
 
+    loadDslrSettings();
     fetchEvents();
   }, []);
 
@@ -220,9 +367,22 @@ export default function DSLRMonitor() {
       // Update settings with current values
       setSettings(prev => ({
         ...prev,
+        autoUpload: realtimeDslrStatus.serviceRunning || false,
         eventId: realtimeDslrStatus.eventId || prev.eventId,
         uploaderName: realtimeDslrStatus.uploaderName || prev.uploaderName,
         watchFolder: realtimeDslrStatus.watchFolder || prev.watchFolder
+      }));
+
+      // Sync dslrSettings with real-time data to prevent reset on navigation
+      setDslrSettings(prev => ({
+        ...prev,
+        autoUpload: realtimeDslrStatus.serviceRunning || false,
+        watchFolder: realtimeDslrStatus.watchFolder || prev.watchFolder,
+        cameraModel: realtimeDslrStatus.cameraModel || prev.cameraModel,
+        autoDetect: realtimeDslrStatus.autoDetect !== undefined ? realtimeDslrStatus.autoDetect : prev.autoDetect,
+        backupEnabled: realtimeDslrStatus.backupEnabled !== undefined ? realtimeDslrStatus.backupEnabled : prev.backupEnabled,
+        notificationsEnabled: realtimeDslrStatus.notificationsEnabled !== undefined ? realtimeDslrStatus.notificationsEnabled : prev.notificationsEnabled,
+        watermarkEnabled: realtimeDslrStatus.watermarkEnabled !== undefined ? realtimeDslrStatus.watermarkEnabled : prev.watermarkEnabled
       }));
     }
   }, [realtimeDslrStatus, useRealtime]);
@@ -282,9 +442,22 @@ export default function DSLRMonitor() {
             // Update settings with current values
             setSettings(prev => ({
               ...prev,
+              autoUpload: data.serviceRunning || false,
               eventId: data.eventId || prev.eventId,
               uploaderName: data.uploaderName || prev.uploaderName,
               watchFolder: data.watchFolder || prev.watchFolder
+            }));
+
+            // Sync dslrSettings with API data to prevent reset on navigation
+            setDslrSettings(prev => ({
+              ...prev,
+              autoUpload: data.serviceRunning || false,
+              watchFolder: data.watchFolder || prev.watchFolder,
+              cameraModel: data.cameraModel || prev.cameraModel,
+              autoDetect: data.autoDetect !== undefined ? data.autoDetect : prev.autoDetect,
+              backupEnabled: data.backupEnabled !== undefined ? data.backupEnabled : prev.backupEnabled,
+              notificationsEnabled: data.notificationsEnabled !== undefined ? data.notificationsEnabled : prev.notificationsEnabled,
+              watermarkEnabled: data.watermarkEnabled !== undefined ? data.watermarkEnabled : prev.watermarkEnabled
             }));
           }
         }
@@ -326,8 +499,72 @@ export default function DSLRMonitor() {
     return () => clearInterval(interval);
   }, [useRealtime, wsConnected]);
 
-  const handlePauseResume = () => {
-    setStats(prev => ({ ...prev, isProcessing: !prev.isProcessing }));
+  const handlePauseResume = async () => {
+    try {
+      const action = stats.isProcessing ? 'pause' : 'resume';
+      const response = await fetch('/api/dslr/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats(prev => ({ ...prev, isProcessing: data.isProcessing }));
+        
+        // Show notification
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('admin-notification', {
+            detail: {
+              type: 'success',
+              message: `DSLR service ${action}d successfully`
+            }
+          }));
+        }
+      } else {
+        console.error('Failed to toggle DSLR service');
+      }
+    } catch (error) {
+      console.error('Error toggling DSLR service:', error);
+    }
+  };
+
+  const handleServiceToggle = async () => {
+    try {
+      const action = stats.serviceRunning ? 'stop' : 'start';
+      const response = await fetch('/api/dslr/control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats(prev => ({ 
+          ...prev, 
+          serviceRunning: data.state.isRunning,
+          isProcessing: data.state.isRunning ? prev.isProcessing : false
+        }));
+        
+        // Show notification
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('admin-notification', {
+            detail: {
+              type: 'success',
+              message: data.message
+            }
+          }));
+        }
+      } else {
+        console.error('Failed to toggle DSLR service');
+      }
+    } catch (error) {
+      console.error('Error toggling DSLR service:', error);
+    }
   };
 
   const handleRefresh = async () => {
@@ -497,6 +734,7 @@ export default function DSLRMonitor() {
                   variant={stats.isProcessing ? "destructive" : "default"}
                   size="sm"
                   onClick={handlePauseResume}
+                  disabled={!stats.serviceRunning}
                 >
                   {stats.isProcessing ? (
                     <>
@@ -507,6 +745,24 @@ export default function DSLRMonitor() {
                     <>
                       <Play className="h-4 w-4 mr-1" />
                       <span className="hidden xs:inline">Resume</span>
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  variant={stats.serviceRunning ? "destructive" : "default"}
+                  size="sm"
+                  onClick={handleServiceToggle}
+                >
+                  {stats.serviceRunning ? (
+                    <>
+                      <XCircle className="h-4 w-4 mr-1" />
+                      <span className="hidden xs:inline">Stop Service</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      <span className="hidden xs:inline">Start Service</span>
                     </>
                   )}
                 </Button>
@@ -590,9 +846,45 @@ export default function DSLRMonitor() {
               <Switch
                 id="auto-upload"
                 checked={settings.autoUpload}
-                onCheckedChange={(checked) => 
-                  setSettings(prev => ({ ...prev, autoUpload: checked }))
-                }
+                onCheckedChange={async (checked) => {
+                  setSettings(prev => ({ ...prev, autoUpload: checked }));
+                  
+                  // Sync with DSLR Configuration
+                  setDslrSettings(prev => ({ ...prev, autoUpload: checked }));
+                  
+                  // Immediately control the service
+                  try {
+                    const action = checked ? 'start' : 'stop';
+                    const response = await fetch('/api/dslr/control', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ action })
+                    });
+
+                    if (response.ok) {
+                      const data = await response.json();
+                      setStats(prev => ({ 
+                        ...prev, 
+                        serviceRunning: data.state.isRunning,
+                        isProcessing: data.state.isRunning ? prev.isProcessing : false
+                      }));
+                      
+                      // Show notification
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('admin-notification', {
+                          detail: {
+                            type: 'success',
+                            message: `Auto upload ${checked ? 'enabled' : 'disabled'}`
+                          }
+                        }));
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error toggling auto upload:', error);
+                  }
+                }}
               />
             </div>
 
@@ -975,5 +1267,26 @@ export default function DSLRMonitor() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component with error boundary
+export default function DSLRMonitor() {
+  return (
+    <AdminErrorBoundary 
+      componentName="DSLR Monitor"
+      onError={(error, errorInfo) => {
+        // Log error with DSLR context
+        console.error('DSLR Monitor Error:', {
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          timestamp: new Date().toISOString()
+        });
+      }}
+      resetKeys={[]} // Add reset keys if needed
+    >
+      <DSLRMonitorContent />
+    </AdminErrorBoundary>
   );
 }

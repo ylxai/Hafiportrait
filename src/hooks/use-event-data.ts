@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, Photo, Message, MessageReactions } from "@/lib/database";
@@ -27,6 +28,11 @@ export function useEventData(eventId: string) {
       return response.json() as Promise<Photo[]>;
     },
     enabled: !!eventId,
+    staleTime: 2 * 1000, // 2 seconds - very fresh data
+    refetchInterval: 5 * 1000, // Refetch every 5 seconds
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnReconnect: true, // Refetch when reconnecting
+    refetchIntervalInBackground: true, // Continue refetching in background
   });
 
   // Fetch event messages
@@ -37,6 +43,11 @@ export function useEventData(eventId: string) {
       return response.json() as Promise<Message[]>;
     },
     enabled: !!eventId,
+    staleTime: 5 * 1000, // 5 seconds
+    refetchInterval: 10 * 1000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnReconnect: true, // Refetch when reconnecting
+    refetchIntervalInBackground: true, // Continue refetching in background
   });
 
   // Verify access code mutation
@@ -60,6 +71,46 @@ export function useEventData(eventId: string) {
     },
   });
 
+  // Manual refresh functions
+  const refreshPhotos = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/events', eventId, 'photos'] });
+  };
+
+  const refreshMessages = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/events', eventId, 'messages'] });
+  };
+
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/events', eventId] });
+    queryClient.invalidateQueries({ queryKey: ['/api/events', eventId, 'photos'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/events', eventId, 'messages'] });
+  };
+
+  // Listen for broadcast events from admin panel
+  useEffect(() => {
+    const handlePhotoDeleted = (event: CustomEvent) => {
+      if (event.detail.eventId === eventId) {
+        console.log('📡 Received photo deleted broadcast, refreshing...');
+        queryClient.refetchQueries({ queryKey: ['/api/events', eventId, 'photos'] });
+      }
+    };
+
+    const handlePhotoUploaded = (event: CustomEvent) => {
+      if (event.detail.eventId === eventId) {
+        console.log('📡 Received photo uploaded broadcast, refreshing...');
+        queryClient.refetchQueries({ queryKey: ['/api/events', eventId, 'photos'] });
+      }
+    };
+
+    window.addEventListener('photoDeleted', handlePhotoDeleted as EventListener);
+    window.addEventListener('photoUploaded', handlePhotoUploaded as EventListener);
+
+    return () => {
+      window.removeEventListener('photoDeleted', handlePhotoDeleted as EventListener);
+      window.removeEventListener('photoUploaded', handlePhotoUploaded as EventListener);
+    };
+  }, [eventId, queryClient]);
+
   return {
     event,
     photos,
@@ -69,5 +120,8 @@ export function useEventData(eventId: string) {
     messagesLoading,
     verifyCodeMutation,
     queryClient,
+    refreshPhotos,
+    refreshMessages,
+    refreshAll,
   };
 }

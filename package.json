@@ -45,7 +45,15 @@
     "zeabur:test": "cd zeabur-socketio && npm test",
     "zeabur:health": "cd zeabur-socketio && npm run health",
     "test:zeabur-integration": "node scripts/test-zeabur-integration.js",
-    "health:zeabur": "node scripts/check-zeabur-health.js"
+    "health:zeabur": "node scripts/check-zeabur-health.js",
+    "monitor:start": "node scripts/enhanced-health-monitor.js start",
+    "monitor:check": "node scripts/enhanced-health-monitor.js check",
+    "monitor:status": "node scripts/enhanced-health-monitor.js status",
+    "monitor:system": "bash scripts/start-monitoring.sh",
+    "alerts:send": "node scripts/alert-manager.js send",
+    "alerts:history": "node scripts/alert-manager.js history",
+    "alerts:stats": "node scripts/alert-manager.js stats",
+    "ci:monitor": "node scripts/ci-monitoring-integration.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.864.0",

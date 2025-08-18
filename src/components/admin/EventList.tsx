@@ -212,8 +212,9 @@ export default function EventList({
                   </Button>
                   
                   {/* Edit Button */}
-                  <Button size="sm" variant="outline" onClick={() => onEdit(event)}>
+                  <Button size="sm" variant="outline" onClick={() => onEdit(event)} className="min-h-[44px] min-w-[44px]">
                     <Edit className="w-4 h-4" />
+                    <span className="sr-only">Edit Event</span>
                   </Button>
                   
                   {/* Delete Button */}
@@ -221,8 +222,9 @@ export default function EventList({
                     if (confirm('Yakin ingin menghapus event ini? Semua foto dan pesan akan ikut terhapus.')) {
                       onDelete(event.id);
                     }
-                  }}>
+                  }} className="min-h-[44px] min-w-[44px]">
                     <Trash className="w-4 h-4" />
+                    <span className="sr-only">Hapus Event</span>
                   </Button>
                 </div>
               </div>

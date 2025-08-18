@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useApiWithRecovery } from '@/hooks/use-error-recovery';
+import AdminErrorBoundary from '@/components/error/AdminErrorBoundary';
+import { SystemMonitorFallback, NetworkErrorFallback } from '@/components/admin/fallback-components';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,7 +71,7 @@ interface SystemMetrics {
   };
 }
 
-export default function SystemMonitor() {
+function SystemMonitorContent() {
   // Real-time WebSocket integration
   const {
     notifications: systemNotifications,
@@ -128,6 +131,71 @@ export default function SystemMonitor() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [useRealtime, setUseRealtime] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load system monitor settings on mount
+  useEffect(() => {
+    const loadSystemSettings = async () => {
+      try {
+        // Try to load from API first
+        const response = await fetch('/api/admin/system/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setUseRealtime(data.useRealtime !== undefined ? data.useRealtime : true);
+        } else {
+          // Fallback to localStorage
+          const savedSettings = localStorage.getItem('system-monitor-settings');
+          if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            setUseRealtime(parsed.useRealtime !== undefined ? parsed.useRealtime : true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load system monitor settings:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('system-monitor-settings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setUseRealtime(parsed.useRealtime !== undefined ? parsed.useRealtime : true);
+        }
+      } finally {
+        setSettingsLoaded(true);
+      }
+    };
+
+    loadSystemSettings();
+  }, []);
+
+  // Save settings when useRealtime changes
+  useEffect(() => {
+    if (!settingsLoaded) return; // Don't save during initial load
+
+    const saveSystemSettings = async () => {
+      const settings = { useRealtime };
+      
+      try {
+        // Save to API first
+        const response = await fetch('/api/admin/system/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+
+        if (response.ok) {
+          // Also save to localStorage as backup
+          localStorage.setItem('system-monitor-settings', JSON.stringify(settings));
+        } else {
+          throw new Error('API save failed');
+        }
+      } catch (error) {
+        console.error('Failed to save system monitor settings:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('system-monitor-settings', JSON.stringify(settings));
+      }
+    };
+
+    saveSystemSettings();
+  }, [useRealtime, settingsLoaded]);
 
   // Handle real-time system notifications
   useEffect(() => {
@@ -814,5 +882,18 @@ export default function SystemMonitor() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Main component with error boundary
+export default function SystemMonitor() {
+  return (
+    <AdminErrorBoundary 
+      componentName="System Monitor"
+      fallback={<SystemMonitorFallback />}
+      showDetails={process.env.NODE_ENV === 'development'}
+    >
+      <SystemMonitorContent />
+    </AdminErrorBoundary>
   );
 }
