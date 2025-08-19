@@ -1,0 +1,121 @@
+# ================================
+# HAFIPORTRAIT PRODUCTION DOCKERFILE
+# Optimized for minimal size & performance
+# ================================
+FROM node:20-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    dumb-init
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm with caching
+RUN npm install -g pnpm@latest && \
+    pnpm config set store-dir /root/.pnpm-store
+
+# ================================
+# DEPENDENCIES LAYER (Cached)
+# ================================
+FROM base AS deps
+
+# Copy package files for dependency installation
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Install ALL dependencies first (for build)
+RUN --mount=type=cache,target=/root/.pnpm-store \
+    pnpm install --frozen-lockfile
+
+# ================================
+# BUILD STAGE
+# ================================
+FROM base AS builder
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+
+# Copy source code
+COPY . .
+
+# Copy environment files for build
+COPY .env.production* ./
+COPY .env.local* ./
+
+# Build application with optimizations
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+
+RUN --mount=type=cache,target=/app/.next/cache \
+    pnpm build
+
+# ================================
+# PRODUCTION DEPENDENCIES
+# ================================
+FROM base AS prod-deps
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Install only production dependencies
+RUN --mount=type=cache,target=/root/.pnpm-store \
+    pnpm install --frozen-lockfile --prod
+
+# ================================
+# PRODUCTION RUNTIME
+# ================================
+FROM node:20-alpine AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    dumb-init && \
+    rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm@latest
+
+# Create non-root user FIRST
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Copy production dependencies with ownership
+COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Copy built application with ownership
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+
+# Copy runtime files with ownership
+COPY --chown=nextjs:nodejs socketio-server.js ./
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Copy environment files with ownership
+COPY --chown=nextjs:nodejs .env.production* ./
+
+# Set environment variables (fixed format)
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000
+
+USER nextjs
+
+# Expose production port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["pnpm", "start"]

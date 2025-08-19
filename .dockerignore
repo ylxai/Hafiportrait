@@ -22,13 +22,15 @@ build/
 # ================================
 .env*
 !.env.example
-.env.local*
+!.env.production
+!.env.local
+!.env.dev.public
+# Block specific env files that are not needed
 .env.development*
 .env.test*
-.env.production*
 .env.*.backup*
-.env.dev.public
 .env.production.clean
+.env.circleci
 
 # ================================
 # SECURITY: Sensitive Files
@@ -156,8 +158,8 @@ desktop.ini
 # ================================
 # PROJECT SPECIFIC
 # ================================
-# Scripts (exclude from production)
-scripts/
+# Scripts (needed for production)
+# scripts/ - commented out because needed in production
 monitoring/
 reports/
 uploads/
