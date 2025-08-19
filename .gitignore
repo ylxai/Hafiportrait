@@ -305,3 +305,4 @@ env-cloudflare.md
 deploy-keys/
 deployment-config.json
 production-secrets.json
+.env.circleci
