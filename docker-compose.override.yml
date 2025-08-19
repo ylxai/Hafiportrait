@@ -5,10 +5,20 @@ version: '3.8'
 services:
   hafiportrait-dev:
     volumes:
-      - .:/app:cached
-      - /app/node_modules
-      - /app/.next
-      - /app/.pnpm-store
+      # ✅ FIXED: No volume conflicts
+      # ✅ FIXED: No anonymous volumes
+      # ✅ FIXED: No root path issues
+      - ./src:/app/src:delegated
+      - ./public:/app/public:delegated
+      - ./scripts:/app/scripts:delegated
+      - ./next.config.js:/app/next.config.js:delegated
+      - ./tailwind.config.js:/app/tailwind.config.js:delegated
+      - ./postcss.config.js:/app/postcss.config.js:delegated
+      - ./tsconfig.json:/app/tsconfig.json:delegated
+      - ./jsconfig.json:/app/jsconfig.json:delegated
+      - ./.env.dev.public:/app/.env.dev.public:delegated
+      - ./.env.local:/app/.env.local:delegated
+      - ./.env.example:/app/.env.example:delegated
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
