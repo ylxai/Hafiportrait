@@ -27,7 +27,7 @@ print_usage() {
     echo "  ./scripts/docker-manager.sh [command]"
     echo ""
     echo -e "${CYAN}Commands:${NC}"
-    echo -e "  ${GREEN}dev${NC}        - Start development environment (port 4000/4001)"
+    echo -e "  ${GREEN}dev${NC}        - Start development environment (port 3002/3003)"
     echo -e "  ${GREEN}prod${NC}       - Start production environment (port 3000/3001)"
     echo -e "  ${GREEN}both${NC}       - Start both dev and prod simultaneously"
     echo -e "  ${GREEN}stop${NC}       - Stop all containers"
@@ -47,8 +47,8 @@ start_dev() {
     echo -e "${BLUE}🚀 Starting Development Environment...${NC}"
     docker-compose up -d hafiportrait-dev
     echo -e "${GREEN}✅ Development started!${NC}"
-    echo -e "${CYAN}📱 Next.js: http://147.251.255.227:4000${NC}"
-    echo -e "${CYAN}🔌 Socket.IO: http://147.251.255.227:4001${NC}"
+    echo -e "${CYAN}📱 Next.js: http://147.251.255.227:3002${NC}"
+    echo -e "${CYAN}🔌 Socket.IO: http://147.251.255.227:3003${NC}"
 }
 
 start_prod() {
@@ -65,8 +65,8 @@ start_both() {
     echo -e "${GREEN}✅ Both environments started!${NC}"
     echo ""
     echo -e "${YELLOW}Development:${NC}"
-    echo -e "${CYAN}📱 Next.js: http://147.251.255.227:4000${NC}"
-    echo -e "${CYAN}🔌 Socket.IO: http://147.251.255.227:4001${NC}"
+    echo -e "${CYAN}📱 Next.js: http://147.251.255.227:3002${NC}"
+    echo -e "${CYAN}🔌 Socket.IO: http://147.251.255.227:3003${NC}"
     echo ""
     echo -e "${YELLOW}Production:${NC}"
     echo -e "${CYAN}🌐 Next.js: http://147.251.255.227:3000${NC}"
@@ -95,8 +95,8 @@ show_status() {
     docker-compose ps
     echo ""
     echo -e "${BLUE}🌐 Access URLs:${NC}"
-    echo -e "${CYAN}Development Next.js: http://147.251.255.227:4000${NC}"
-    echo -e "${CYAN}Development Socket.IO: http://147.251.255.227:4001${NC}"
+    echo -e "${CYAN}Development Next.js: http://147.251.255.227:3002${NC}"
+    echo -e "${CYAN}Development Socket.IO: http://147.251.255.227:3003${NC}"
     echo -e "${CYAN}Production Next.js: http://147.251.255.227:3000${NC}"
     echo -e "${CYAN}Production Socket.IO: http://147.251.255.227:3001${NC}"
 }

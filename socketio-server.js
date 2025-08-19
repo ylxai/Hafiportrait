@@ -24,9 +24,9 @@ const corsOptions = {
     'http://147.251.255.227:3002',
     
     // Production ports
-    'http://localhost:4000',
-    'http://127.0.0.1:4000',
-    'http://147.251.255.227:4000',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002',
+    'http://147.251.255.227:3002',
     'http://localhost:4002',
     'http://147.251.255.227:4002',
     

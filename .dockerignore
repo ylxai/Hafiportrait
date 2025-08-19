@@ -1,96 +1,149 @@
+# ================================
+# HAFIPORTRAIT DOCKER IGNORE
+# Optimized for security & performance
+# ================================
+
 # Dependencies
-node_modules
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-store/
 
 # Build outputs
 .next/
 out/
 dist/
+build/
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.backup.*
-.env.public.dev
-.env.production.
-# Logs
-logs
+# ================================
+# SECURITY: Environment Files
+# ================================
+.env*
+!.env.example
+.env.local*
+.env.development*
+.env.test*
+.env.production*
+.env.*.backup*
+.env.dev.public
+.env.production.clean
+
+# ================================
+# SECURITY: Sensitive Files
+# ================================
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+*.ssh/
+
+# Certificates
+*.crt
+*.cert
+*.p12
+*.pfx
+
+# Database dumps
+*.sql
+*.db
+*.sqlite*
+
+# Backup files
+*.backup*
+*.bak
+*.old
+
+# ================================
+# LOGS & RUNTIME
+# ================================
+logs/
 *.log
-
-# Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# PM2 ecosystem files
+ecosystem*.js
+pm2.json
 
-# nyc test coverage
-.nyc_output
+# ================================
+# DEVELOPMENT TOOLS
+# ================================
+# Documentation (exclude from production)
+docs/
+README*.md
+CHANGELOG.md
+LICENSE*
+*.md
+!package.json
 
-# Dependency directories
-jspm_packages/
+# Git
+.git/
+.gitignore
+.gitattributes
 
-# Optional npm cache directory
-.npm
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+docker-*.sh
 
-# Optional eslint cache
-.eslintcache
+# CI/CD
+.circleci/
+.github/
+.gitlab-ci.yml
+.travis.yml
 
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
+# Development tools
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
 
-# OS generated files
+# Linting & formatting
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Testing
+jest.config.*
+cypress/
+cypress.json
+coverage/
+.nyc_output/
+test-results/
+__tests__/
+*.test.*
+*.spec.*
+
+# ================================
+# CACHING & TEMPORARY
+# ================================
+.cache/
+.parcel-cache/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+tmp/
+temp/
+.tmp/
+
+# Package managers
+.npm/
+.yarn/
+.pnpm-store/
+yarn.lock
+package-lock.json
+
+# ================================
+# OS & EDITOR FILES
+# ================================
 .DS_Store
 .DS_Store?
 ._*
@@ -98,36 +151,34 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# PM2 logs
-logs/
-*.log
+# ================================
+# PROJECT SPECIFIC
+# ================================
+# Scripts (exclude from production)
+scripts/
+monitoring/
+reports/
+uploads/
+DSLR-System/
 
-# Git
-.git
-.gitignore
-
-# Docker
-Dockerfile
-.dockerignore
-docker-compose*.yml
-
-# Documentation
-README.md
-CHANGELOG.md
-LICENSE
-docs/
-# Development tools
-.eslintrc*
-.prettierrc*
-jest.config.*
-cypress/
-cypress.json
-
-# Testing
-coverage/
-.nyc_output/
-test-results/
-
-# Backup files
+# Development files
 *.backup.*
+*.old
+*.tmp
+ac.sh
+docker-docker-rebuild.sh
+
+# Optional: Exclude public uploads in production
+# public/uploads/
+
+# ================================
+# PERFORMANCE: Large files
+# ================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+*.dmg

@@ -30,15 +30,21 @@
   - [ ] Port 4001 (Development Socket.IO)
 
 ### **Phase 2: Docker Build & Test**
-- [ ] **2.1** Build Docker images
+- [x] **2.1** Build Docker images ✅ COMPLETED
   ```bash
   pnpm run docker:build
   ```
-- [ ] **2.2** Test development environment
+- [❌] **2.2** Test development environment ❌ FAILED
   ```bash
   pnpm run docker:dev
-  # Test: http://147.251.255.227:4000
+  # Test: http://147.251.255.227:3002 (Updated port)
   ```
+  **CRITICAL ISSUES:**
+  - Docker Compose HTTP timeouts (60s limit exceeded)
+  - Container creation failures 
+  - Resource/network constraints
+  - Command parsing still problematic despite fixes
+  
 - [ ] **2.3** Test production environment
   ```bash
   pnpm run docker:prod
@@ -152,45 +158,100 @@ curl http://localhost:3000
 
 ## 🚨 **Known Issues & Solutions**
 
-### **Potential Issues**
-1. **Port conflicts** → Use `pnpm run docker:stop` first
-2. **Permission issues** → Check file ownership
-3. **Environment variables** → Verify .env files
-4. **Memory limits** → Monitor with `docker stats`
+### **Current Issues (Phase 2)**
+1. **Docker Permission Denied** ⚠️ CRITICAL
+   - Error: `permission denied while trying to connect to the Docker daemon socket`
+   - Solution: `sudo usermod -aG docker $USER && newgrp docker`
+   
+2. **Port Configuration Conflicts** ✅ FIXED
+   - Issue: Multiple files had hardcoded 4000/4001 ports
+   - Fixed: Updated to 3002/3003 for development
+   - Files updated: package.json, docker-compose.yml, socketio-server.js, Dockerfile.multi-stage
+   
+3. **Command Parsing Issues** ✅ FIXED
+   - Issue: `/app/-H` directory error from command parsing
+   - Fixed: Created dedicated `dev:docker` script in package.json
+   - Updated docker-compose.yml to use proper JSON array format
+
+### **Next Steps (Priority Order)**
+
+#### **IMMEDIATE (Choose One):**
+
+**Option A: Manual Container Bypass** (RECOMMENDED)
+```bash
+# Bypass docker-compose, run container manually
+sudo docker run -d --name hafiportrait-dev-manual \
+  -p 3002:3002 \
+  --env-file .env.dev.public \
+  -v $(pwd):/app \
+  stable_hafiportrait-dev:latest \
+  sh -c "cd /app && pnpm run dev:docker"
+```
+
+**Option B: Rollback to PM2** (SAFE FALLBACK)
+```bash
+# Resume production with proven PM2 setup
+sudo pm2 start ecosystem.config.js
+# Docker migration dapat dilanjutkan nanti
+```
+
+**Option C: Simplify Docker Setup** (LONG TERM)
+```bash
+# Focus production Docker first, skip development
+sudo docker-compose up -d hafiportrait-prod socketio-prod
+```
+
+#### **AFTER IMMEDIATE FIX:**
+1. **Verify chosen approach works**
+2. **Test domain access** (https://hafiportrait.photography)
+3. **Monitor stability** for 24 hours
+4. **Plan Docker optimization** (if continuing Docker path)
 
 ### **Quick Fixes**
 ```bash
-# Clean everything and restart
-pnpm run docker:clean
+# Fix permissions (try first)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Alternative: Use sudo (temporary)
+sudo docker restart hafiportrait-dev
+sudo docker logs hafiportrait-dev
+
+# Clean everything if needed
+sudo docker system prune -f
 pnpm run docker:build
-pnpm run docker:prod
-
-# Check logs for errors
-pnpm run docker:logs
-
-# Restart specific service
-docker restart hafiportrait-prod
 ```
 
 ## 📝 **Migration Notes**
 
 ### **Completed Steps**
-- [x] **Production stopped** - PM2 processes halted
-- [x] **Ports available** - 3000/3001 ready for Docker
-- [x] **Docker files created** - Multi-stage setup ready
-- [x] **Scripts prepared** - Management commands ready
+- [x] **Production stopped** - PM2 processes halted ✅
+- [x] **Ports available** - 3000/3001 ready for Docker ✅
+- [x] **Docker files created** - Multi-stage setup ready ✅
+- [x] **Scripts prepared** - Management commands ready ✅
+- [x] **Images built** - Docker build successful ✅
+- [x] **Port conflicts resolved** - Updated all config files ✅
 
-### **Next Actions**
-1. Build Docker images
-2. Test development environment
-3. Test production environment
-4. Deploy to production
-5. Verify domain access
+### **Failed Steps**
+- [❌] **Container deployment** - Docker Compose timeouts
+- [❌] **Development testing** - Container creation failed
+- [❌] **Production migration** - Blocked by container issues
+
+### **Current Situation**
+- **Time invested:** 1+ hours troubleshooting
+- **Success rate:** 0% (no working containers)
+- **Production status:** DOWN (PM2 stopped)
+- **Risk level:** HIGH (production offline)
+
+### **Immediate Actions Required**
+1. **Choose recovery strategy** (Manual container / PM2 rollback / Simplified Docker)
+2. **Restore production service** ASAP
+3. **Verify domain accessibility**
+4. **Plan Docker optimization** (if continuing)
 
 ---
 
-**Migration started on:** `date +"%Y-%m-%d %H:%M:%S"`
-**Estimated completion:** 30-60 minutes
-**Risk level:** Low (easy rollback available)
-
-**Ready to proceed with Docker migration!** 🚀
+**Migration started:** 2+ hours ago  
+**Current status:** BLOCKED - Need immediate decision  
+**Risk level:** HIGH (production down)  
+**Recommendation:** Choose Option A or B immediately** 🚨

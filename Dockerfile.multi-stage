@@ -23,7 +23,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Expose development ports
-EXPOSE 4000 4001
+EXPOSE 3002 3003
 
 # Development command (hot reload)
 CMD ["pnpm", "run", "dev:public"]
