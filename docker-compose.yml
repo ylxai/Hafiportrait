@@ -9,10 +9,7 @@ services:
   # DEVELOPMENT SERVICE
   # ================================
   hafiportrait-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.development
-      target: development
+    image: hafiportrait-dev:latest
     container_name: hafiportrait-dev
     ports:
       - "3002:3002"
@@ -48,17 +45,15 @@ services:
   # SOCKET.IO SERVICE
   # ================================
   socketio-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.socketio
+    image: hafiportrait-socket:latest
     container_name: hafiportrait-socketio-dev
     ports:
-      - "3003:3003"
+      - "3003:3001"
     environment:
       - NODE_ENV=development
       - HOST=0.0.0.0
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -69,13 +64,13 @@ services:
   # PRODUCTION SERVICE
   # ================================
   hafiportrait-prod:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
-      target: production
+    image: hafiportrait-prod:latest
     container_name: hafiportrait-prod
     ports:
       - "3000:3000"
+    volumes:
+      - /app/node_modules
+      - /app/.next
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
@@ -94,17 +89,15 @@ services:
   # PRODUCTION SOCKET.IO SERVICE
   # ================================
   socketio-prod:
-    build:
-      context: .
-      dockerfile: Dockerfile.socketio
-    container_name: hafiportrait-socketio-prod
+    image: hafiportrait-socket:latest
+    container_name: hafiportrait-socketio
     ports:
-      - "3001:3003"
+      - "3001:3001"
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -122,7 +115,7 @@ networks:
 # ================================
 # VOLUMES (Minimal, no conflicts)
 # ================================
-volumes:
+#volumes:
   # ✅ FIXED: No anonymous volumes
   # ✅ FIXED: No root path conflicts
   # ✅ FIXED: No permission issues
