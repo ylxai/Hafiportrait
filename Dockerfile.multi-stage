@@ -81,11 +81,9 @@ COPY socketio-server.js ./
 COPY --from=builder /app/scripts ./scripts
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Change ownership
-RUN chown -R nextjs:nodejs /app
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /app
 USER nextjs
 
 # Expose production ports

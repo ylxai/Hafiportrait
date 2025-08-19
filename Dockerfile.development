@@ -6,16 +6,16 @@ FROM node:20-alpine AS base
 
 # Install system dependencies
 RUN apk add --no-cache \
-    libc6-compat \
-    curl \
-    git
+    libc6-compat=1.2.4-r4 \
+    curl=8.5.0-r0 \
+    git=2.43.0-r0
 
 # Set working directory
 WORKDIR /app
 
 # Install pnpm with caching
 RUN npm install -g pnpm@latest && \
-    pnpm config set store-dir /root/.pnpm-store
+    pnpm config set store-dir /app/.pnpm-store
 
 # ================================
 # DEPENDENCIES LAYER (Cached)
@@ -26,7 +26,7 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install dependencies with cache mount
-RUN --mount=type=cache,target=/root/.pnpm-store \
+RUN --mount=type=cache,target=/app/.pnpm-store \
     pnpm install --frozen-lockfile
 
 # ================================
@@ -45,10 +45,8 @@ COPY .env.example ./
 
 # Create non-root user for security BEFORE copying files
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Create directories with proper ownership
-RUN mkdir -p /app/.next /app/node_modules && \
+    adduser -S nextjs -u 1001 && \
+    mkdir -p /app/.next /app/node_modules && \
     chown -R nextjs:nodejs /app/.next /app/node_modules
 
 # Copy source code with proper ownership from start
