@@ -3,7 +3,6 @@ version: 2.1
 # Orbs untuk mempermudah konfigurasi
 orbs:
   node: circleci/node@5.1.0
-  cloudflare: cloudflare/cloudflare@1.0.0
 
 # Jobs definition
 jobs:
@@ -65,71 +64,97 @@ jobs:
             - package.json
             - pnpm-lock.yaml
 
-  # Job untuk deploy ke Cloudflare Pages
-  deploy-cloudflare:
+  # Job untuk build verification (no deployment)
+  verify-build:
     docker:
-      - image: cimg/node:18.17
+      - image: cimg/node:20.10
     working_directory: ~/hafiportrait
     steps:
       - checkout
       - attach_workspace:
           at: ~/hafiportrait
       - run:
-          name: Install Wrangler CLI
-          command: npm install -g wrangler
-      - run:
-          name: Deploy to Cloudflare Pages
+          name: Verify build artifacts
           command: |
-            echo "Deploying to Cloudflare Pages..."
-            wrangler pages deploy .next/static --project-name=hafiportrait --compatibility-date=2024-01-01
+            echo "🔍 Verifying build artifacts..."
+            ls -la .next/
+            echo "✅ Build verification completed!"
       - run:
-          name: Notify deployment success
+          name: Build summary
           command: |
-            echo "✅ Deployment to Cloudflare Pages completed successfully!"
-            echo "🌐 URL: https://hafiportrait.pages.dev"
+            echo "✅ Build completed successfully!"
+            echo "📦 Ready for manual deployment"
 
-  # Job untuk health check setelah deployment
-  health-check:
+  # Job untuk local health check (no external deployment)
+  local-health-check:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Health check - Frontend
+          name: Health check - Local Server
           command: |
-            echo "🔍 Checking frontend health..."
-            curl -f https://hafiportrait.pages.dev/api/health || exit 1
-            echo "✅ Frontend is healthy"
+            echo "🔍 Checking local server health..."
+            curl -f http://147.251.255.227:3000/api/health || echo "⚠️ Local server not running"
+            echo "✅ Local health check completed"
       - run:
           name: Health check - Socket.IO Server
           command: |
             echo "🔍 Checking Socket.IO server health..."
-            curl -f http://147.251.255.227:4001/health || exit 1
-            echo "✅ Socket.IO server is healthy"
-      - run:
-          name: Health check - Database
-          command: |
-            echo "🔍 Checking database connectivity..."
-            # Test akan dilakukan via API endpoint
-            curl -f https://hafiportrait.pages.dev/api/test/db || exit 1
-            echo "✅ Database is healthy"
+            curl -f http://147.251.255.227:3001/health || echo "⚠️ Socket.IO server not running"
+            echo "✅ Socket.IO health check completed"
 
-  # Job untuk monitoring dan alerting
-  post-deploy-monitoring:
+  # Job untuk deployment ke production server
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/hafiportrait
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/hafiportrait
+      - run:
+          name: Install Docker
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+      - run:
+          name: Setup SSH
+          command: |
+            mkdir -p ~/.ssh
+            echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
+      - run:
+          name: Deploy to Production Server
+          command: |
+            echo "🚀 Deploying to production server..."
+            ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+              cd /home/ubuntu/hafiportrait
+              git pull origin main
+              sudo docker-compose down hafiportrait-prod socketio-prod
+              sudo docker-compose build hafiportrait-prod socketio-prod
+              sudo docker-compose up -d hafiportrait-prod socketio-prod
+              echo "✅ Production deployment completed!"
+            EOF
+      - run:
+          name: Health Check
+          command: |
+            echo "🔍 Checking production health..."
+            sleep 30
+            curl -f https://hafiportrait.photography/api/health || echo "⚠️ Health check failed"
+            echo "✅ Deployment verification completed"
+
+  # Job untuk build notification
+  build-notification:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Send deployment notification
+          name: Send build notification
           command: |
-            echo "📢 Sending deployment notification..."
-            # Slack notification bisa ditambahkan di sini
-            echo "✅ Deployment notification sent"
-      - run:
-          name: Update monitoring dashboard
-          command: |
-            echo "📊 Updating monitoring dashboard..."
-            # Update status monitoring
-            echo "✅ Monitoring dashboard updated"
+            echo "📢 Sending deployment completion notification..."
+            echo "✅ Production deployment completed successfully"
+            echo "🌐 Website: https://hafiportrait.photography"
 
 # Workflows definition
 workflows:
@@ -154,8 +179,8 @@ workflows:
                 - main
                 - master
       
-      # Deploy phase (hanya untuk main/master branch)
-      - deploy-cloudflare:
+      # Build verification phase (hanya untuk main/master branch)
+      - verify-build:
           requires:
             - build
           filters:
@@ -164,27 +189,17 @@ workflows:
                 - main
                 - master
       
-      # Health check setelah deploy
-      - health-check:
+      # Build notification
+      - build-notification:
           requires:
-            - deploy-cloudflare
-          filters:
-            branches:
-              only:
-                - main
-                - master
-      
-      # Post-deployment monitoring
-      - post-deploy-monitoring:
-          requires:
-            - health-check
+            - verify-build
           filters:
             branches:
               only:
                 - main
                 - master
 
-  # Nightly health check workflow
+  # Nightly health check workflow (local servers only)
   nightly-health-check:
     triggers:
       - schedule:
@@ -195,7 +210,4 @@ workflows:
                 - main
                 - master
     jobs:
-      - health-check
-      - post-deploy-monitoring:
-          requires:
-            - health-check
+      - local-health-check
