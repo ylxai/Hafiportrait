@@ -137,7 +137,7 @@ ENABLE_SOCKETIO_ROOMS=true
 async function generateVercelEnvFile(config) {
   console.log('📝 Generating .env.production for Vercel...');
 
-  const vercelEnvContent = `# Vercel Production Environment
+  const vercelEnvContent = `# VPS Production Environment
 # Auto-generated for deployment
 
 NODE_ENV=production

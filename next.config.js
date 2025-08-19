@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const path = require('path')
 
-// Polyfills moved to client-side only to avoid server-side window errors
-
 const nextConfig = {
   webpack: (config, { isServer }) => {
     // Minimal webpack configuration to avoid conflicts
@@ -35,23 +33,26 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // Performance optimizations (disabled optimizeCss due to critters dependency issue)
+  // Performance optimizations
   experimental: {
     // optimizeCss: true, // Disabled - causes critters module not found error
   },
-  // CloudRun configuration
+  
   images: {
-    domains: ['localhost', 'api.qrserver.com', 'azspktldiblhrwebzmwq.supabase.co', '147.251.255.227'],
+    domains: ['localhost', 'api.qrserver.com', 'azspktldiblhrwebzmwq.supabase.co', '147.251.255.227', 'photos.hafiportrait.photography'],
     formats: ['image/webp', 'image/avif'],
   },
-  // External packages configuration (removed for compatibility)
+  
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
+    NEXTAUTH_URL_INTERNAL: 'http://localhost:3000',
   },
-  // CloudRun optimizations
+  
+  // Optimizations
   poweredByHeader: false,
   compress: true,
-  // Custom server configuration for CloudRun
+  
+  // Custom server configuration
   async rewrites() {
     return [
       {

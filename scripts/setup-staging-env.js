@@ -11,7 +11,7 @@ const EnvironmentDetector = require('./env-detector');
 
 async function setupStagingEnvironment() {
   console.log('🔄 Setting up Staging Environment...');
-  console.log('🎯 Target: Vercel Staging (hafiportrait-staging.vercel.app)');
+  console.log('🎯 Target: Staging di VPS (non-Vercel)');
   console.log('');
 
   const detector = new EnvironmentDetector();
@@ -30,9 +30,9 @@ async function setupStagingEnvironment() {
   await validateConfiguration(config);
 
   console.log('\n✅ Staging environment setup complete!');
-  console.log('🚀 Ready for: npm run build && npm start');
+  console.log('🚀 Ready for: pnpm build && pm2 restart ecosystem.config.js');
   console.log(`🌐 Staging URL: ${config.NEXT_PUBLIC_APP_URL}`);
-  console.log('📦 Vercel preview deployment ready');
+  console.log('📦 Staging on VPS ready');
 }
 
 async function backupExistingEnv() {

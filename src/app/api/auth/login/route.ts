@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, createSession, logActivity } from '@/lib/auth';
 import { cookies } from 'next/headers';
-import { corsResponse, corsErrorResponse, handleOptions } from '@/lib/cors';
+import { corsResponse, corsErrorResponse, handleOptions, handleCors } from '@/lib/cors';
 
 // Handle OPTIONS preflight requests
 export async function OPTIONS(request: NextRequest) {
@@ -203,17 +203,71 @@ export async function POST(request: NextRequest) {
     // Set session cookie with enhanced security for production
     const cookieStore = await cookies();
     const isProduction = process.env.NODE_ENV === 'production';
-    
-    // Fix cookie for IP access - disable secure for development/IP access
-    const isSecure = false; // Always false for IP access
-    console.log('Setting cookie with secure:', isSecure);
-    cookieStore.set('admin_session', sessionId, {
+
+    // Detect HTTPS correctly behind reverse proxy
+    const hostHeader = request.headers.get('host') || '';
+    const xfp = (request.headers.get('x-forwarded-proto') || '').toLowerCase();
+    const isHttps = xfp === 'https' || origin?.startsWith('https://') || request.url.startsWith('https://');
+
+    const isLocalhost =
+      hostHeader.includes('localhost') ||
+      hostHeader.startsWith('127.0.0.1') ||
+      origin?.includes('localhost') ||
+      origin?.includes('127.0.0.1') ||
+      request.url.includes('localhost') ||
+      request.url.includes('127.0.0.1');
+
+    // Set cookie with proper domain handling
+    const cookieOptions: any = {
       httpOnly: true,
-      secure: isSecure,
+      secure: false, // Will be set conditionally below
       sameSite: 'lax',
       maxAge: 24 * 60 * 60, // 24 hours
-      path: '/'
+      path: '/',
+    };
+
+    // Set secure flag when served over HTTPS or in production on non-localhost
+    if ((isHttps && !isLocalhost) || (isProduction && !isLocalhost)) {
+      cookieOptions.secure = true;
+    } else {
+      cookieOptions.secure = false;
+    }
+
+    // Only set cookie domain if current host is under hafiportrait.photography
+    const isHafiPortraitDomain = hostHeader.endsWith('hafiportrait.photography') || hostHeader.endsWith('.hafiportrait.photography');
+    if (isHafiPortraitDomain) {
+      cookieOptions.domain = '.hafiportrait.photography';
+      console.log('🌐 Setting cookie domain for hafiportrait.photography');
+    } else {
+      // Host-only cookie (works for IPs and other hosts)
+      console.log('🌐 Leaving cookie domain undefined (host-only). Host:', hostHeader);
+    }
+
+    console.log('🔧 COOKIE DEBUG - Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      isProduction,
+      isLocalhost,
+      isHttps,
+      isHafiPortraitDomain,
+      hostHeader,
+      requestUrl: request.url,
+      origin,
+      xfp,
+      cookieSecure: cookieOptions.secure,
+      cookieDomain: cookieOptions.domain,
+      cookieOptions: JSON.stringify(cookieOptions),
     });
+    
+    console.log('🍪 FINAL Cookie options before setting:', cookieOptions);
+    console.log('🍪 Setting cookie with sessionId:', sessionId);
+    
+    try {
+      cookieStore.set('admin_session', sessionId, cookieOptions);
+      console.log('🍪 Cookie set successfully');
+    } catch (error) {
+      console.error('🍪 Cookie setting failed:', error);
+    }
 
     // Return user data (without sensitive info)
     const responseData = {
@@ -233,8 +287,28 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    console.log('Login successful, returning response');
-    return corsResponse(responseData, 200, origin);
+    console.log('Login successful, preparing response with cookies');
+    
+    // Build response and set cookies explicitly on response
+    const res = NextResponse.json(responseData, { status: 200 });
+    
+    // Set domain cookie (if defined)
+    try {
+      if (cookieOptions.domain) {
+        res.cookies.set('admin_session', sessionId, cookieOptions);
+        console.log('🍪 Response cookie (domain) set');
+      }
+      // Also set a host-only cookie (no domain) to maximize browser compatibility
+      const hostOnlyOptions: any = { ...cookieOptions };
+      delete hostOnlyOptions.domain;
+      res.cookies.set('admin_session', sessionId, hostOnlyOptions);
+      console.log('🍪 Response cookie (host-only) set');
+    } catch (e) {
+      console.error('🍪 Setting cookies on response failed:', e);
+    }
+
+    // Add CORS headers
+    return handleCors(res, origin);
 
   } catch (error) {
     console.error('Login API error:', error);

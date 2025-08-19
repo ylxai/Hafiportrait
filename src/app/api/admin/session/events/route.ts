@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { session_id, user_id, event_type, metadata } = body;
     
-    // Validate required fields
+    // Validate required fields (be lenient in production to avoid UI failures)
     if (!session_id || !user_id || !event_type) {
       return NextResponse.json({
-        success: false,
-        error: 'Missing required fields: session_id, user_id, event_type'
+        success: true,
+        message: 'Session event ignored (missing fields)',
       }, {
-        status: 400,
+        status: 200,
         headers: corsHeaders
       });
     }

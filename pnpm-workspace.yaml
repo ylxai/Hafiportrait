@@ -1,4 +1,7 @@
+ignoredBuiltDependencies:
+  - '@firebase/util'
+  - protobufjs
+
 onlyBuiltDependencies:
-  - '@vercel/speed-insights'
   - sharp
   - unrs-resolver

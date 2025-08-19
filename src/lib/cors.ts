@@ -15,13 +15,15 @@ function getAllowedOrigins(): string[] {
     'https://hafiportrait-git-main.vercel.app',
     'https://hafiportrait-git-develop.vercel.app',
     
-    // Development domains
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    'http://147.251.255.227:3000',
-    'http://147.251.255.227:3001',
+    // Development domains (only in development)
+    ...(process.env.NODE_ENV === 'development' ? [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://147.251.255.227:3000',
+      'http://147.251.255.227:3001',
+    ] : []),
     
     // Vercel preview domains
     'https://*.vercel.app',
@@ -54,6 +56,18 @@ function getAllowedOrigins(): string[] {
 // Check if origin is allowed
 function isOriginAllowed(origin: string): boolean {
   const allowedOrigins = getAllowedOrigins();
+  
+  // For production with VPS, allow domain and localhost
+  if (process.env.NODE_ENV === 'production') {
+    // Allow production domain and localhost for internal requests
+    if (origin === 'https://hafiportrait.photography' || 
+        origin === 'https://www.hafiportrait.photography' ||
+        !origin || // Allow requests without origin (server-to-server)
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1')) {
+      return true;
+    }
+  }
   
   // Allow all origins in development
   if (process.env.NODE_ENV === 'development') {

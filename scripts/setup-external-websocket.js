@@ -54,7 +54,9 @@ NEXT_PUBLIC_WS_HEALTH_URL=${EXTERNAL_WS_CONFIG.healthEndpoint}
 function createVercelConfig() {
   console.log('\n2️⃣ Creating Vercel environment configuration...');
   
-  const vercelEnvConfig = {
+  // Vercel integration disabled for VPS
+aaa = 1; // placeholder to keep structure but disabled
+const vercelEnvConfig = {
     development: {
       NEXT_PUBLIC_WS_URL: EXTERNAL_WS_CONFIG.url,
       NEXT_PUBLIC_SOCKETIO_URL: EXTERNAL_WS_CONFIG.url,
@@ -82,7 +84,7 @@ function createVercelConfig() {
   
   try {
     fs.writeFileSync(configPath, JSON.stringify(vercelEnvConfig, null, 2));
-    console.log('✅ Vercel configuration created: vercel-websocket-config.json');
+    console.log('ℹ️ Vercel configuration step skipped (VPS environment)');
   } catch (error) {
     console.log('❌ Failed to create Vercel config:', error.message);
   }
@@ -94,30 +96,32 @@ function generateVercelCommands() {
   
   const commands = [
     `# Set WebSocket environment variables in Vercel`,
-    `vercel env add NEXT_PUBLIC_WS_URL production`,
+    # Vercel env add skipped (VPS),
     `# When prompted, enter: ${EXTERNAL_WS_CONFIG.url}`,
     ``,
-    `vercel env add NEXT_PUBLIC_SOCKETIO_URL production`,
+    # Vercel env add skipped (VPS),
     `# When prompted, enter: ${EXTERNAL_WS_CONFIG.url}`,
     ``,
-    `vercel env add NEXT_PUBLIC_USE_SOCKETIO production`,
+    # Vercel env add skipped (VPS),
     `# When prompted, enter: true`,
     ``,
-    `vercel env add NEXT_PUBLIC_ENABLE_FALLBACK production`,
+    # Vercel env add skipped (VPS),
     `# When prompted, enter: true`,
     ``,
-    `vercel env add NEXT_PUBLIC_POLLING_ENABLED production`,
+    # Vercel env add skipped (VPS),
     `# When prompted, enter: true`,
     ``,
     `# Deploy with new configuration`,
-    `vercel --prod`
+    # Vercel deploy skipped (VPS)
+pnpm build
+pm2 restart ecosystem.config.js
   ];
   
   const commandsPath = path.join(process.cwd(), 'vercel-setup-commands.sh');
   
   try {
     fs.writeFileSync(commandsPath, commands.join('\n'));
-    console.log('✅ Vercel commands generated: vercel-setup-commands.sh');
+    console.log('ℹ️ Vercel commands generation skipped (VPS)');
     console.log('   Run these commands to set up Vercel environment variables');
   } catch (error) {
     console.log('❌ Failed to generate commands:', error.message);
@@ -480,8 +484,8 @@ async function setupExternalWebSocket() {
     console.log('\n📝 Next steps:');
     console.log('   1. Run: npm run dev (to test locally)');
     console.log('   2. Run: node scripts/test-external-websocket.js (to test connection)');
-    console.log('   3. Set Vercel environment variables using vercel-setup-commands.sh');
-    console.log('   4. Deploy: vercel --prod');
+    console.log('   3. Lewati langkah Vercel (gunakan VPS .env)');
+    console.log('   4. Deploy ke VPS: pnpm build && pm2 restart ecosystem.config.js');
     console.log('\n🔧 Files created/updated:');
     console.log('   - .env.local');
     console.log('   - vercel-websocket-config.json');

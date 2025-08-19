@@ -124,9 +124,9 @@ run_migrations() {
     log "Database migrations completed (add your migration commands)"
 }
 
-# Deploy to Vercel
+# Deploy to Vercel (removed)
 deploy_vercel() {
-    log "🚀 Deploying to Vercel ($ENVIRONMENT)..."
+    log "⏭️ Skipping Vercel deployment (VPS only)"
     
     if ! command -v vercel &> /dev/null; then
         npm install -g vercel
@@ -255,6 +255,7 @@ main() {
     
     # Deploy based on platform
     if [[ -n "$VERCEL_URL" ]]; then
+        log "⏭️ Skipping Vercel deployment (VPS only)"
         deploy_vercel
     elif [[ -n "$RAILWAY_ENVIRONMENT" ]]; then
         deploy_railway

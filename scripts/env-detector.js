@@ -19,7 +19,7 @@ class EnvironmentDetector {
         NODE_ENV: 'production',
         NEXT_PUBLIC_APP_URL: 'https://hafiportrait.photography',
         NEXT_PUBLIC_ENV_MODE: 'production',
-        description: 'Vercel production dengan domain custom'
+        description: 'Produksi di VPS (domain custom)'}
       },
       staging: {
         NODE_ENV: 'production',

@@ -43,12 +43,15 @@ export async function POST(request: NextRequest) {
 
     // Clear session cookie
     const cookieStoreForClear = await cookies();
+    const host = request.headers.get('host')?.toLowerCase() || '';
+    const isHafiPortrait = host.endsWith('hafiportrait.photography') || host.endsWith('.hafiportrait.photography');
     cookieStoreForClear.set('admin_session', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0,
-      path: '/'
+      path: '/',
+      ...(isHafiPortrait ? { domain: '.hafiportrait.photography' } : {}),
     });
 
     return NextResponse.json({

@@ -716,7 +716,7 @@ node scripts/test-external-websocket.js
 npm run dev
 \`\`\`
 
-### **2. Set Vercel Environment Variables**
+### **2. Konfigurasi Environment VPS (.env)
 \`\`\`bash
 # Run the generated commands
 bash vercel-setup-commands.sh
@@ -727,13 +727,14 @@ bash vercel-setup-commands.sh
 # NEXT_PUBLIC_USE_SOCKETIO=true
 \`\`\`
 
-### **3. Deploy to Production**
+### **3. Deploy ke VPS**
 \`\`\`bash
-# Deploy with new configuration
-vercel --prod
+# Build dan restart di VPS
+pnpm build
+pm2 restart ecosystem.config.js
 
-# Verify deployment
-curl -I https://your-domain.vercel.app
+# Verifikasi halaman
+curl -I https://hafiportrait.photography
 \`\`\`
 
 ### **4. Monitor Connection**
@@ -808,9 +809,9 @@ async function integrateExternalWebSocket() {
     console.log('\n🎉 External WebSocket Integration completed successfully!');
     console.log('\n📝 Next steps:');
     console.log('   1. Test connection: node scripts/test-external-websocket.js');
-    console.log('   2. Setup environment: node scripts/setup-external-websocket.js');
-    console.log('   3. Start development: npm run dev');
-    console.log('   4. Deploy to production: vercel --prod');
+    console.log('   2. Setup environment VPS: node scripts/setup-external-websocket.js (atau atur .env manual)');
+    console.log('   3. Start development: pnpm dev');
+    console.log('   4. Deploy to VPS: pnpm build && pm2 restart ecosystem.config.js');
     
     console.log('\n🔧 Integration Features:');
     console.log('   ✅ Smart WebSocket connection management');

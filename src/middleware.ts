@@ -84,19 +84,23 @@ const isOriginAllowed = (origin: string): boolean => {
 
 // Helper function to get base URL for API calls
 function getBaseUrl(request: NextRequest): string {
-  // For CloudRun and production environments
-  if (process.env.NODE_ENV === 'production') {
-    // Use the request URL's origin for production
-    const url = new URL(request.url);
-    return url.origin;
+  // Prefer proxy headers to reconstruct external origin correctly
+  const xfProtoRaw = request.headers.get('x-forwarded-proto') || '';
+  const xfHostRaw = request.headers.get('x-forwarded-host') || '';
+  const hostHeader = request.headers.get('host') || '';
+
+  const xfProto = xfProtoRaw.split(',')[0].trim();
+  const xfHost = xfHostRaw.split(',')[0].trim();
+
+  const proto = xfProto || (request.url.startsWith('https://') ? 'https' : 'http');
+  const host = xfHost || hostHeader;
+
+  if (proto && host) {
+    return `${proto}://${host}`;
   }
-  
-  // For development, handle both HTTP and HTTPS
+
+  // Fallback to URL origin
   const url = new URL(request.url);
-  if (url.protocol === 'https:' && url.hostname === 'localhost') {
-    return `http://${url.host}`;
-  }
-  
   return url.origin;
 }
 
@@ -256,12 +260,15 @@ export async function middleware(request: NextRequest) {
       
       // Clear invalid session and redirect to login
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
+      const host = request.headers.get('host')?.toLowerCase() || '';
+      const isHafiPortrait = host.endsWith('hafiportrait.photography') || host.endsWith('.hafiportrait.photography');
       response.cookies.set('admin_session', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 0,
-        path: '/'
+        path: '/',
+        ...(isHafiPortrait ? { domain: '.hafiportrait.photography' } : {}),
       });
       return addCorsHeaders(response, origin);
     }
@@ -282,19 +289,30 @@ export async function middleware(request: NextRequest) {
       
       // Clear invalid session
       const response = NextResponse.next();
+      const host = request.headers.get('host')?.toLowerCase() || '';
+      const isHafiPortrait = host.endsWith('hafiportrait.photography') || host.endsWith('.hafiportrait.photography');
       response.cookies.set('admin_session', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 0,
-        path: '/'
+        path: '/',
+        ...(isHafiPortrait ? { domain: '.hafiportrait.photography' } : {}),
       });
       return addCorsHeaders(response, origin);
     }
   }
 
-  // For all other routes, add CORS headers
+  // For all other routes, add CORS headers and set anti-cache for /admin
   const response = NextResponse.next();
+  
+  // Anti-cache headers for admin pages to avoid proxy caching issues
+  if (pathname.startsWith('/admin')) {
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Vary', 'Cookie');
+  }
+
   return addCorsHeaders(response, origin);
 }
 

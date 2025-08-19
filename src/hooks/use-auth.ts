@@ -98,9 +98,11 @@ export function useAuth(): AuthState & AuthActions {
   // Check authentication status
   const checkAuth = useCallback(async () => {
     try {
+      console.log('🔍 checkAuth: Starting auth check...');
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       
       const response = await makeAuthRequest('/api/auth/me', { method: 'GET' });
+      console.log('🔍 checkAuth: Response status:', response.status);
       
       // Log auth check event for monitoring
       if (typeof window !== 'undefined') {
@@ -267,7 +269,7 @@ export function useAuth(): AuthState & AuthActions {
   // Check auth on mount
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []); // Remove checkAuth dependency to prevent infinite loop
   
   // Timeout fallback to prevent infinite loading
   useEffect(() => {
@@ -327,10 +329,17 @@ export function useRequireAuth(redirectTo: string = '/admin/login'): AuthState &
     if (!auth.isLoading && !auth.isAuthenticated) {
       // Add current path as redirect parameter
       const currentPath = typeof window !== 'undefined' && window.location && window.location.pathname ? window.location.pathname : '';
+      
+      // Don't redirect if we're already on the login page
+      if (currentPath === redirectTo) {
+        return;
+      }
+      
       const redirectUrl = currentPath && currentPath !== redirectTo 
         ? `${redirectTo}?redirect=${encodeURIComponent(currentPath)}`
         : redirectTo;
-        
+      
+      console.log('useRequireAuth: Redirecting to login, current path:', currentPath);
       router.push(redirectUrl);
     }
   }, [auth.isLoading, auth.isAuthenticated, router, redirectTo]);

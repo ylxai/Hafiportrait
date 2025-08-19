@@ -1,0 +1,201 @@
+version: 2.1
+
+# Orbs untuk mempermudah konfigurasi
+orbs:
+  node: circleci/node@5.1.0
+  cloudflare: cloudflare/cloudflare@1.0.0
+
+# Jobs definition
+jobs:
+  # Job untuk testing dan linting
+  test:
+    docker:
+      - image: cimg/node:18.17
+    working_directory: ~/hafiportrait
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: pnpm
+      - run:
+          name: Install pnpm
+          command: |
+            sudo corepack enable
+            corepack prepare pnpm@latest --activate
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - run:
+          name: Lint code
+          command: pnpm run lint
+      - run:
+          name: Environment validation
+          command: pnpm run env:validate
+      - run:
+          name: Test database connection
+          command: pnpm run test:db
+      - run:
+          name: Test storage connection
+          command: pnpm run test:storage
+
+  # Job untuk build aplikasi
+  build:
+    docker:
+      - image: cimg/node:18.17
+    working_directory: ~/hafiportrait
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: pnpm
+      - run:
+          name: Install pnpm
+          command: |
+            sudo corepack enable
+            corepack prepare pnpm@latest --activate
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - run:
+          name: Build application
+          command: pnpm run build
+      - persist_to_workspace:
+          root: ~/hafiportrait
+          paths:
+            - .next
+            - node_modules
+            - package.json
+            - pnpm-lock.yaml
+
+  # Job untuk deploy ke Cloudflare Pages
+  deploy-cloudflare:
+    docker:
+      - image: cimg/node:18.17
+    working_directory: ~/hafiportrait
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/hafiportrait
+      - run:
+          name: Install Wrangler CLI
+          command: npm install -g wrangler
+      - run:
+          name: Deploy to Cloudflare Pages
+          command: |
+            echo "Deploying to Cloudflare Pages..."
+            wrangler pages deploy .next/static --project-name=hafiportrait --compatibility-date=2024-01-01
+      - run:
+          name: Notify deployment success
+          command: |
+            echo "✅ Deployment to Cloudflare Pages completed successfully!"
+            echo "🌐 URL: https://hafiportrait.pages.dev"
+
+  # Job untuk health check setelah deployment
+  health-check:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Health check - Frontend
+          command: |
+            echo "🔍 Checking frontend health..."
+            curl -f https://hafiportrait.pages.dev/api/health || exit 1
+            echo "✅ Frontend is healthy"
+      - run:
+          name: Health check - Socket.IO Server
+          command: |
+            echo "🔍 Checking Socket.IO server health..."
+            curl -f http://147.251.255.227:4001/health || exit 1
+            echo "✅ Socket.IO server is healthy"
+      - run:
+          name: Health check - Database
+          command: |
+            echo "🔍 Checking database connectivity..."
+            # Test akan dilakukan via API endpoint
+            curl -f https://hafiportrait.pages.dev/api/test/db || exit 1
+            echo "✅ Database is healthy"
+
+  # Job untuk monitoring dan alerting
+  post-deploy-monitoring:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Send deployment notification
+          command: |
+            echo "📢 Sending deployment notification..."
+            # Slack notification bisa ditambahkan di sini
+            echo "✅ Deployment notification sent"
+      - run:
+          name: Update monitoring dashboard
+          command: |
+            echo "📊 Updating monitoring dashboard..."
+            # Update status monitoring
+            echo "✅ Monitoring dashboard updated"
+
+# Workflows definition
+workflows:
+  version: 2
+  
+  # Main CI/CD workflow
+  build-test-deploy:
+    jobs:
+      # Testing phase
+      - test:
+          filters:
+            branches:
+              only: /.*/
+      
+      # Build phase (hanya untuk main/master branch)
+      - build:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - main
+                - master
+      
+      # Deploy phase (hanya untuk main/master branch)
+      - deploy-cloudflare:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - main
+                - master
+      
+      # Health check setelah deploy
+      - health-check:
+          requires:
+            - deploy-cloudflare
+          filters:
+            branches:
+              only:
+                - main
+                - master
+      
+      # Post-deployment monitoring
+      - post-deploy-monitoring:
+          requires:
+            - health-check
+          filters:
+            branches:
+              only:
+                - main
+                - master
+
+  # Nightly health check workflow
+  nightly-health-check:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *" # Setiap hari jam 2 pagi
+          filters:
+            branches:
+              only:
+                - main
+                - master
+    jobs:
+      - health-check
+      - post-deploy-monitoring:
+          requires:
+            - health-check

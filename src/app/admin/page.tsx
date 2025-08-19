@@ -37,8 +37,8 @@ export default function ModernAdminDashboard() {
   const auth = useRequireAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // State management
+
+  // State management - MOVED BEFORE CONDITIONAL RETURNS
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -575,7 +575,30 @@ export default function ModernAdminDashboard() {
     }
   };
 
-  // Loading state
+  // Show loading spinner while auth is being checked
+  if (auth.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state for user
   if (!auth.user) {
     return (
       <div className="min-h-screen flex items-center justify-center">

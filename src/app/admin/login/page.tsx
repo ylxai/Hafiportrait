@@ -111,10 +111,14 @@ function LoginForm() {
     setSuccess('');
 
     try {
+      console.log('🔐 Attempting login for:', username);
+      console.log('🌐 Current origin:', window.location.origin);
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Origin': window.location.origin,
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -122,8 +126,12 @@ function LoginForm() {
           password: password.trim(),
         }),
       });
+      
+      console.log('📡 Login response status:', response.status);
+      console.log('📡 Login response headers:', Object.fromEntries(response.headers.entries()));
 
       const data = await response.json();
+      console.log('📡 Login response data:', data);
 
       if (response.ok && data.success) {
         setSuccess('Login berhasil! Mengalihkan ke dashboard...');
@@ -132,10 +140,11 @@ function LoginForm() {
         // Get redirect URL from search params or default to admin
         const redirectUrl = searchParams?.get('redirect') || '/admin';
         
-        // Small delay to show success message
-        setTimeout(() => {
-          router.push(redirectUrl);
-        }, 1000);
+        // Immediate redirect - no delay
+        console.log('Login successful, redirecting to:', redirectUrl);
+        
+        // Force immediate redirect using window.location.replace
+        window.location.replace(redirectUrl);
       } else {
         let errorMessage = 'Login gagal. Silakan coba lagi.';
         
@@ -149,7 +158,12 @@ function LoginForm() {
         showToast(errorMessage, 'error');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login fetch error:', error);
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       const errorMessage = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
       setError(errorMessage);
       showToast(errorMessage, 'error');

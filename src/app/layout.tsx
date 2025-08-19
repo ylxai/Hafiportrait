@@ -4,8 +4,9 @@ import './globals.css'
 import '@/styles/heart-animations.css'
 import '@/styles/color-palette.css'
 import '@/styles/hero-enhancements.css'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Analytics } from '@vercel/analytics/react'
+// Removed Vercel SpeedInsights and Analytics for VPS production
+// import { SpeedInsights } from '@vercel/speed-insights/next'
+// import { Analytics } from '@vercel/analytics/react'
 
 export const metadata: Metadata = {
   title: 'Hafi Portrait - Photo Sharing untuk Event',
@@ -58,8 +59,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <SpeedInsights />
-        <Analytics />
+        {/* Vercel instrumentation removed for VPS */}
       </body>
     </html>
   )

@@ -48,7 +48,7 @@ class SocketIOClient {
   private isBackground: boolean = false;
   private networkType: string = 'unknown';
 
-  constructor(private url: string = 'https://wbs.zeabur.app') {
+  constructor(private url: string = 'http://localhost:3000') {
     this.detectMobile();
     this.setupNetworkDetection();
     this.setupVisibilityHandling();
@@ -733,7 +733,10 @@ let socketIOClient: SocketIOClient | null = null;
 
 export function getSocketIOClient(): SocketIOClient {
   if (!socketIOClient) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKETIO_URL || process.env.NEXT_PUBLIC_WS_URL || 'http://147.251.255.227:3001';
+    // For production, use the same domain as the website (Nginx will proxy to localhost:3000)
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKETIO_URL || 
+                     (process.env.NODE_ENV === 'production' ? 'https://hafiportrait.photography' : 'http://localhost:3000');
+    console.log('🔌 Socket.IO URL:', socketUrl);
     socketIOClient = new SocketIOClient(socketUrl);
   }
   return socketIOClient;

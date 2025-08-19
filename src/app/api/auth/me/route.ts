@@ -38,12 +38,15 @@ export async function GET(request: NextRequest) {
       console.log('🚫 Invalid session, clearing cookie');
       // Clear invalid session cookie
       const cookieStoreForClear = await cookies();
+      const host = request.headers.get('host')?.toLowerCase() || '';
+      const isHafiPortrait = host.endsWith('hafiportrait.photography') || host.endsWith('.hafiportrait.photography');
       cookieStoreForClear.set('admin_session', '', {
         httpOnly: true,
-        secure: false, // Match login cookie setting
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 0,
-        path: '/'
+        path: '/',
+        ...(isHafiPortrait ? { domain: '.hafiportrait.photography' } : {}),
       });
 
       return corsErrorResponse('Invalid or expired session', 401);

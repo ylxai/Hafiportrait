@@ -117,7 +117,7 @@ function testCreatedFiles() {
   
   const expectedFiles = [
     '.env.local',
-    'vercel-websocket-config.json',
+    'VPS-websocket-config.json (vercel file removed)',
     'vercel-setup-commands.sh',
     'src/hooks/use-websocket-integration.ts',
     'src/lib/production-websocket-config.ts',
@@ -178,8 +178,8 @@ async function runSimpleTests() {
       console.log('\n🎉 WebSocket integration is ready!');
       console.log('\n📝 Next steps:');
       console.log('   1. Start development: npm run dev');
-      console.log('   2. Set Vercel environment variables: bash vercel-setup-commands.sh');
-      console.log('   3. Deploy to production: vercel --prod');
+      console.log('   2. Lewati Vercel env vars, gunakan .env VPS');
+      console.log('   3. Deploy ke VPS: pnpm build && pm2 restart ecosystem.config.js');
       
       console.log('\n🔧 Your system now has:');
       console.log('   ✅ External WebSocket server integration');

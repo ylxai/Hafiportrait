@@ -221,6 +221,93 @@
     @apply md:hidden;
   }
 
+  /* Photo Strip Gallery Styles - Like Film Strip */
+  .photo-strip-container {
+    @apply relative w-full;
+  }
+
+  .photo-strip-wrapper {
+    @apply relative w-full h-48 md:h-64 lg:h-80 overflow-hidden;
+    /* Glassmorphism background */
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .photo-strip {
+    @apply flex absolute top-0 h-full;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .photo-strip-slow {
+    animation: scrollLeft 180s linear infinite;
+  }
+
+  .photo-strip-item {
+    @apply flex-shrink-0 cursor-pointer relative overflow-hidden;
+    width: 320px; /* Even larger width */
+    height: calc(100% - 24px); /* Leave margin for glassmorphism effect */
+    margin: 12px 16px 12px 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .photo-strip-item:hover {
+    transform: scale(1.08) translateY(-8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(12px);
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    z-index: 10;
+  }
+
+  /* Glassmorphism accent dots */
+  .photo-strip-item::before,
+  .photo-strip-item::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    z-index: 1;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .photo-strip-item::before {
+    top: 12px;
+    left: 8px;
+  }
+
+  .photo-strip-item::after {
+    bottom: 12px;
+    right: 8px;
+  }
+
+  /* Pause animation on hover */
+  .photo-strip-container:hover .photo-strip {
+    animation-play-state: paused;
+  }
+
   /* Engaging loading animations */
   @keyframes float {
     0%, 100% {
@@ -248,6 +335,63 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* Photo Strip Animations */
+  @keyframes scrollLeft {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes scrollRight {
+    0% {
+      transform: translateX(-50%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  /* Mobile optimizations for photo strip */
+  @media (max-width: 768px) {
+    .photo-strip-wrapper {
+      @apply h-40;
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+    }
+    
+    .photo-strip-item {
+      width: 200px;
+      height: calc(100% - 16px);
+      margin: 8px 12px 8px 0;
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+    }
+    
+    .photo-strip-item:hover {
+      transform: scale(1.05) translateY(-4px);
+    }
+    
+    .photo-strip-slow {
+      animation: scrollLeft 120s linear infinite;
+    }
+  }
+
+  /* Tablet optimizations */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .photo-strip-wrapper {
+      @apply h-56;
+    }
+    
+    .photo-strip-item {
+      width: 280px;
+      height: calc(100% - 20px);
+      margin: 10px 14px 10px 0;
     }
   }
 

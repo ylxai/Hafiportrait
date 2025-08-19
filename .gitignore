@@ -287,6 +287,14 @@ desktop.ini
 *.dng
 
 # Compressed Files
+
+# Environment Configuration Files (DO NOT COMMIT)
+env-*.md
+env-production.md
+env-staging.md
+env-development.md
+env-circleci.md
+env-cloudflare.md
 *.zip
 *.rar
 *.7z
