@@ -13,8 +13,6 @@ jobs:
     working_directory: ~/hafiportrait
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: pnpm
       - run:
           name: Install pnpm
           command: |
@@ -43,8 +41,6 @@ jobs:
     working_directory: ~/hafiportrait
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: pnpm
       - run:
           name: Install pnpm
           command: |
