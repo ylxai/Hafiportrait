@@ -47,7 +47,6 @@ next-env.d.ts
 
 # Docker
 Dockerfile.backup
-docker-compose.yml
 .dockerignore.backup
 
 # CloudRun deployment files (keep for VPS)

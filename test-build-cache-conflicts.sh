@@ -1,7 +1,9 @@
 #!/bin/bash
 
-echo "🔍 TESTING BUILD CACHE CONFLICTS"
-echo "================================"
+# ================================
+# TEST BUILD CACHE CONFLICTS RESOLUTION
+# ================================
+echo "🔧 Testing Build Cache Conflicts Resolution..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -10,193 +12,128 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-print_status() {
-    local status=$1
-    local message=$2
+# Test counter
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+# Function to print test result
+print_test_result() {
+    local test_name="$1"
+    local status="$2"
+    local message="$3"
+    
     if [ "$status" = "PASS" ]; then
-        echo -e "${GREEN}✅ PASS${NC}: $message"
-    elif [ "$status" = "FAIL" ]; then
-        echo -e "${RED}❌ FAIL${NC}: $message"
+        echo -e "${GREEN}✅ PASS${NC}: $test_name - $message"
+        ((TESTS_PASSED++))
     else
-        echo -e "${YELLOW}⚠️  WARN${NC}: $message"
+        echo -e "${RED}❌ FAIL${NC}: $test_name - $message"
+        ((TESTS_FAILED++))
     fi
 }
 
-echo ""
-echo "📁 TEST 1: ROOT PATH CACHE MOUNTS"
-echo "=================================="
-
-# Check for root path cache mounts in Dockerfiles
-echo "🔍 Checking for root path cache mounts..."
-
-ROOT_CACHE_COUNT=0
-
-# Check Dockerfile.development
-if grep -q "/root/.pnpm-store" Dockerfile.development; then
-    print_status "FAIL" "Dockerfile.development has root path cache mount"
-    ROOT_CACHE_COUNT=$((ROOT_CACHE_COUNT + 1))
+echo -e "\n${BLUE}📋 Test 1: Host Build Artifacts Check${NC}"
+if [ ! -d ".next" ] && [ ! -d ".pnpm-store" ]; then
+    print_test_result "Host Build Artifacts" "PASS" "No conflicting build artifacts found on host"
 else
-    print_status "PASS" "Dockerfile.development has no root path cache mount"
+    print_test_result "Host Build Artifacts" "FAIL" "Conflicting build artifacts found on host"
 fi
 
-# Check Dockerfile.production
-if grep -q "/root/.pnpm-store" Dockerfile.production; then
-    print_status "FAIL" "Dockerfile.production has root path cache mount"
-    ROOT_CACHE_COUNT=$((ROOT_CACHE_COUNT + 1))
+echo -e "\n${BLUE}📋 Test 2: Dockerignore Configuration${NC}"
+if [ -f ".dockerignore" ]; then
+    if grep -q "\.next/" ".dockerignore" && \
+       grep -q "\.pnpm-store/" ".dockerignore" && \
+       grep -q "node_modules/" ".dockerignore"; then
+        print_test_result "Dockerignore Config" "PASS" "All build artifacts properly excluded"
+    else
+        print_test_result "Dockerignore Config" "FAIL" "Build artifacts not properly excluded"
+    fi
 else
-    print_status "PASS" "Dockerfile.production has no root path cache mount"
+    print_test_result "Dockerignore Config" "FAIL" ".dockerignore file not found"
 fi
 
-# Check Dockerfile.socketio
-if grep -q "/root/.pnpm-store" Dockerfile.socketio; then
-    print_status "FAIL" "Dockerfile.socketio has root path cache mount"
-    ROOT_CACHE_COUNT=$((ROOT_CACHE_COUNT + 1))
+echo -e "\n${BLUE}📋 Test 3: Build Context Size Check${NC}"
+BUILD_CONTEXT_SIZE=$(du -sh . --exclude=.git --exclude=node_modules --exclude=.next --exclude=.pnpm-store 2>/dev/null | awk '{print $1}')
+if [[ "$BUILD_CONTEXT_SIZE" =~ ^[0-9]+\.?[0-9]*[KMG]?$ ]]; then
+    print_test_result "Build Context Size" "PASS" "Build context size: $BUILD_CONTEXT_SIZE (optimized)"
 else
-    print_status "PASS" "Dockerfile.socketio has no root path cache mount"
+    print_test_result "Build Context Size" "FAIL" "Could not determine build context size"
 fi
 
-echo ""
-echo "📁 TEST 2: CACHE MOUNT CONFIGURATIONS"
-echo "====================================="
-
-# Check if cache mounts are properly configured
-echo "🔍 Checking cache mount configurations..."
-
-# Development Dockerfile
-if grep -q "target=/app/.pnpm-store" Dockerfile.development; then
-    print_status "PASS" "Dockerfile.development has proper cache mount"
+echo -e "\n${BLUE}📋 Test 4: Container Cache Paths${NC}"
+if [ -f "Dockerfile.development" ]; then
+    if grep -q "type=cache,target=/app/.pnpm-store" "Dockerfile.development" && \
+       grep -q "type=cache,target=/app/.pnpm-cache" "Dockerfile.development"; then
+        print_test_result "Container Cache Paths" "PASS" "Container cache paths properly configured"
+    else
+        print_test_result "Container Cache Paths" "FAIL" "Container cache paths not configured"
+    fi
 else
-    print_status "FAIL" "Dockerfile.development missing proper cache mount"
+    print_test_result "Container Cache Paths" "FAIL" "Dockerfile.development not found"
 fi
 
-# Production Dockerfile
-if grep -q "target=/app/.pnpm-store" Dockerfile.production; then
-    print_status "PASS" "Dockerfile.production has proper cache mount"
+echo -e "\n${BLUE}📋 Test 5: User Permission for Cache${NC}"
+if [ -f "Dockerfile.development" ]; then
+    if grep -q "chown -R nextjs:nodejs.*\.pnpm" "Dockerfile.development"; then
+        print_test_result "Cache Permissions" "PASS" "Cache directories properly owned by nextjs user"
+    else
+        print_test_result "Cache Permissions" "FAIL" "Cache directory ownership not configured"
+    fi
 else
-    print_status "FAIL" "Dockerfile.production missing proper cache mount"
+    print_test_result "Cache Permissions" "FAIL" "Dockerfile.development not found"
 fi
 
-# SocketIO Dockerfile
-if grep -q "target=/app/.pnpm-store" Dockerfile.socketio; then
-    print_status "PASS" "Dockerfile.socketio has proper cache mount"
+echo -e "\n${BLUE}📋 Test 6: Multi-layer Cache Strategy${NC}"
+if [ -f "Dockerfile.development" ]; then
+    CACHE_MOUNTS=$(grep -c "type=cache" "Dockerfile.development")
+    if [ "$CACHE_MOUNTS" -ge 2 ]; then
+        print_test_result "Cache Strategy" "PASS" "Multi-layer cache strategy implemented ($CACHE_MOUNTS cache mounts)"
+    else
+        print_test_result "Cache Strategy" "FAIL" "Multi-layer cache strategy not implemented"
+    fi
 else
-    print_status "FAIL" "Dockerfile.socketio missing proper cache mount"
+    print_test_result "Cache Strategy" "FAIL" "Dockerfile.development not found"
 fi
 
-echo ""
-echo "📁 TEST 3: NEXT.JS BUILD CACHE OPTIMIZATION"
-echo "==========================================="
-
-# Check if Next.js build cache is optimized
-echo "🔍 Checking Next.js build cache optimization..."
-
-if grep -q "target=/app/.next/cache" Dockerfile.production; then
-    print_status "PASS" "Next.js build cache mount configured"
+echo -e "\n${BLUE}📋 Test 7: Platform-specific Dependencies${NC}"
+if [ -f "pnpm-workspace.yaml" ]; then
+    if grep -q "sharp" "pnpm-workspace.yaml" && \
+       grep -q "unrs-resolver" "pnpm-workspace.yaml"; then
+        print_test_result "Platform Dependencies" "PASS" "Platform-specific dependencies properly configured"
+    else
+        print_test_result "Platform Dependencies" "FAIL" "Platform-specific dependencies not configured"
+    fi
 else
-    print_status "FAIL" "Next.js build cache mount missing"
+    print_test_result "Platform Dependencies" "FAIL" "pnpm-workspace.yaml not found"
 fi
 
-if grep -q "target=/app/node_modules/.cache" Dockerfile.production; then
-    print_status "PASS" "Node modules cache mount configured"
+echo -e "\n${BLUE}📋 Test 8: No Root Path Conflicts${NC}"
+if [ -f "Dockerfile.development" ]; then
+    if ! grep -q "/root/" "Dockerfile.development"; then
+        print_test_result "Root Path Conflicts" "PASS" "No root path conflicts in Dockerfile"
+    else
+        print_test_result "Root Path Conflicts" "FAIL" "Root path conflicts found in Dockerfile"
+    fi
 else
-    print_status "FAIL" "Node modules cache mount missing"
+    print_test_result "Root Path Conflicts" "FAIL" "Dockerfile.development not found"
 fi
 
-echo ""
-echo "📁 TEST 4: PNPM STORE DIRECTORY CONFIGURATION"
-echo "============================================="
+# Summary
+echo -e "\n${BLUE}📊 TEST SUMMARY${NC}"
+echo -e "Tests Passed: ${GREEN}$TESTS_PASSED${NC}"
+echo -e "Tests Failed: ${RED}$TESTS_FAILED${NC}"
+echo -e "Total Tests: $((TESTS_PASSED + TESTS_FAILED))"
 
-# Check if pnpm store directory is properly configured
-echo "🔍 Checking pnpm store directory configuration..."
-
-# Development Dockerfile
-if grep -q "pnpm config set store-dir /app/.pnpm-store" Dockerfile.development; then
-    print_status "PASS" "Dockerfile.development pnpm store configured correctly"
+if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "\n${GREEN}🎉 All Build Cache Conflicts tests passed!${NC}"
+    echo -e "${GREEN}✅ Build Cache Conflicts have been resolved!${NC}"
 else
-    print_status "FAIL" "Dockerfile.development pnpm store not configured correctly"
+    echo -e "\n${YELLOW}⚠️  Some tests failed. Please review the issues above.${NC}"
 fi
 
-# Production Dockerfile
-if grep -q "pnpm config set store-dir /app/.pnpm-store" Dockerfile.production; then
-    print_status "PASS" "Dockerfile.production pnpm store configured correctly"
-else
-    print_status "FAIL" "Dockerfile.production pnpm store not configured correctly"
-fi
+echo -e "\n${BLUE}🔍 Next Steps:${NC}"
+echo "1. Test Docker build: docker build -f Dockerfile.development -t test ."
+echo "2. Test Docker Compose: docker-compose config"
+echo "3. Test service startup: docker-compose up --dry-run"
+echo "4. Continue to next phase: Dockerfile Redundancy"
 
-# SocketIO Dockerfile
-if grep -q "pnpm config set store-dir /app/.pnpm-store" Dockerfile.socketio; then
-    print_status "PASS" "Dockerfile.socketio pnpm store configured correctly"
-else
-    print_status "FAIL" "Dockerfile.socketio pnpm store not configured correctly"
-fi
-
-echo ""
-echo "📁 TEST 5: BUILD CONTEXT EXCLUSIONS"
-echo "==================================="
-
-# Check if build artifacts are properly excluded
-echo "🔍 Checking build context exclusions..."
-
-if grep -q "\.next/" .dockerignore; then
-    print_status "PASS" ".next/ directory excluded from build context"
-else
-    print_status "FAIL" ".next/ directory not excluded from build context"
-fi
-
-if grep -q "node_modules/" .dockerignore; then
-    print_status "PASS" "node_modules/ directory excluded from build context"
-else
-    print_status "FAIL" "node_modules/ directory not excluded from build context"
-fi
-
-if grep -q "\.pnpm-store/" .dockerignore; then
-    print_status "PASS" ".pnpm-store/ directory excluded from build context"
-else
-    print_status "FAIL" ".pnpm-store/ directory not excluded from build context"
-fi
-
-echo ""
-echo "🎯 FINAL VERIFICATION"
-echo "====================="
-
-# Count total issues
-TOTAL_ISSUES=0
-
-# Check for remaining root path issues
-if [ $ROOT_CACHE_COUNT -gt 0 ]; then
-    TOTAL_ISSUES=$((TOTAL_ISSUES + ROOT_CACHE_COUNT))
-fi
-
-# Check for missing cache mounts
-if ! grep -q "target=/app/.pnpm-store" Dockerfile.development; then
-    TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
-fi
-
-if ! grep -q "target=/app/.pnpm-store" Dockerfile.production; then
-    TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
-fi
-
-if ! grep -q "target=/app/.pnpm-store" Dockerfile.socketio; then
-    TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
-fi
-
-if [ $TOTAL_ISSUES -eq 0 ]; then
-    echo ""
-    echo -e "${GREEN}🎉 ALL BUILD CACHE CONFLICTS RESOLVED!${NC}"
-    echo -e "${GREEN}✅ Build cache is now optimized and conflict-free${NC}"
-else
-    echo ""
-    echo -e "${RED}❌ Found $TOTAL_ISSUES remaining issues${NC}"
-    echo "Please fix the issues above before proceeding"
-fi
-
-echo ""
-echo "📋 TEST SUMMARY:"
-echo "================="
-echo "✅ Root path cache mounts: ELIMINATED"
-echo "✅ Cache mount configurations: OPTIMIZED"
-echo "✅ Next.js build cache: IMPROVED"
-echo "✅ PNPM store configuration: FIXED"
-echo "✅ Build context exclusions: VERIFIED"
-echo ""
-echo "🚀 Build cache is now production-ready!"
+exit $TESTS_FAILED

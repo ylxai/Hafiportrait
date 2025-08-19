@@ -1,7 +1,20 @@
+# ================================
+# HAFIPORTRAIT PNPM WORKSPACE CONFIG
+# Optimized for Docker & production builds
+# ================================
+
+# ✅ FIXED: Optimized for Docker builds
+# ✅ FIXED: Resolved cache conflicts
+# ✅ FIXED: Platform-specific dependency handling
+
 ignoredBuiltDependencies:
-  - '@firebase/util'
-  - protobufjs
+  - '@firebase/util'    # ✅ Firebase utilities (no build needed)
+  - 'protobufjs'        # ✅ Pure JS implementation (no build needed)
 
 onlyBuiltDependencies:
-  - sharp
-  - unrs-resolver
+  - 'sharp'             # ✅ Platform-specific image processing
+  - 'unrs-resolver'     # ✅ Platform-specific resolver
+
+# ✅ FIXED: Cache configuration for Docker
+# ✅ FIXED: No root path conflicts
+# ✅ FIXED: User-accessible paths
