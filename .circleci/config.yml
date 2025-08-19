@@ -105,11 +105,9 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/hafiportrait
-      - run:
-          name: Install Docker
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y docker.io
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: true
       - run:
           name: Setup SSH
           command: |
