@@ -337,7 +337,7 @@ function DSLRMonitorContent() {
 
     loadDslrSettings();
     fetchEvents();
-  }, []);
+  }, [stats.isProcessing, stats.queueSize]);
 
   // Update stats from WebSocket real-time data
   useEffect(() => {
@@ -497,7 +497,7 @@ function DSLRMonitorContent() {
     console.log(`📊 DSLR Monitor polling: ${pollingInterval}ms (Processing: ${stats.isProcessing}, Queue: ${stats.queueSize})`);
 
     return () => clearInterval(interval);
-  }, [useRealtime, wsConnected]);
+  }, [useRealtime, wsConnected, stats.isProcessing, stats.queueSize]);
 
   const handlePauseResume = async () => {
     try {
@@ -803,7 +803,7 @@ function DSLRMonitorContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Last Upload</CardTitle>
-            <Image className="h-4 w-4 text-muted-foreground" />
+            <Image className="h-4 w-4 text-muted-foreground" alt="" />
           </CardHeader>
           <CardContent>
             <div className="text-sm font-bold">

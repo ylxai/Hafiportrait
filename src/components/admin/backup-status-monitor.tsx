@@ -5,7 +5,7 @@
  * Provides global overview of all backup operations with WebSocket real-time updates
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ export function BackupStatusMonitor() {
   }, [backupProgress]);
 
   // Load backup status from API (fallback when WebSocket not available)
-  const loadBackupStatus = async () => {
+  const loadBackupStatus = useCallback(async () => {
     try {
       setError(null);
       setIsRefreshing(true);
@@ -140,7 +140,7 @@ export function BackupStatusMonitor() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [useRealtime, wsConnected]);
 
   // Enhanced adaptive polling with better responsiveness
   useEffect(() => {
@@ -181,7 +181,7 @@ export function BackupStatusMonitor() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh, useRealtime, wsConnected, summary?.activeBackups]);
+  }, [autoRefresh, useRealtime, wsConnected, summary?.activeBackups, loadBackupStatus, refreshStatus]);
 
   // Clean up old backup statuses
   const cleanupOldBackups = async (maxAge: number = 7) => {

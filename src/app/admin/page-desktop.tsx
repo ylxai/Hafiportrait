@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Event, Photo, Stats } from "@/lib/database";
 import { apiRequest } from "@/lib/queryClient";
@@ -1075,7 +1076,7 @@ export default function AdminDashboardGrouped() {
                       <Tabs value={selectedPhotoTab} onValueChange={setSelectedPhotoTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 mb-6">
                           <TabsTrigger value="homepage" className="flex items-center gap-2">
-                            <Image className="w-4 h-4" />
+                            <Camera className="w-4 h-4" />
                             <span className="hidden sm:inline">Homepage</span>
                             <span className="sm:hidden">Home</span>
                           </TabsTrigger>
@@ -1156,9 +1157,11 @@ export default function AdminDashboardGrouped() {
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                               {homepagePhotos.map((photo: any) => (
                                 <div key={photo.id} className="relative group">
-                                  <img
+                                  <Image
                                     src={photo.url}
-                                    alt={photo.original_name}
+                                    alt={photo.original_name || 'Homepage photo'}
+                                    width={96}
+                                    height={96}
                                     className="w-full h-24 object-cover rounded-lg"
                                   />
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all rounded-lg flex items-center justify-center">
@@ -1180,7 +1183,7 @@ export default function AdminDashboardGrouped() {
                             </div>
                           ) : (
                             <div className="text-center py-12 text-gray-500">
-                              <Image className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                              <Camera className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                               <p>Belum ada foto di galeri homepage.</p>
                             </div>
                           )}
@@ -1215,9 +1218,11 @@ export default function AdminDashboardGrouped() {
                                 // Existing slideshow photos
                                 slideshowPhotos.map((photo, index: number) => (
                                   <div key={photo.id} className="relative group aspect-square">
-                                    <img
+                                    <Image
                                       src={photo.url}
-                                      alt={photo.original_name}
+                                      alt={photo.original_name || 'Slideshow photo'}
+                                      width={200}
+                                      height={200}
                                       className="w-full h-full object-cover rounded-lg"
                                     />
                                     {/* Order indicator */}
@@ -1257,7 +1262,7 @@ export default function AdminDashboardGrouped() {
                             {/* Add from gallery section */}
                             <div className="border rounded-lg p-4 bg-gray-50">
                               <h4 className="font-medium mb-3 flex items-center gap-2">
-                                <Image className="w-4 h-4" />
+                                <Camera className="w-4 h-4" />
                                 Add from Homepage Gallery
                               </h4>
                               <div className="grid grid-cols-3 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
@@ -1275,9 +1280,11 @@ export default function AdminDashboardGrouped() {
                                         }
                                       }}
                                     >
-                                      <img
+                                      <Image
                                         src={photo.url}
-                                        alt={photo.original_name}
+                                        alt={photo.original_name || 'Gallery photo'}
+                                        width={80}
+                                        height={80}
                                         className="w-full aspect-square object-cover rounded border-2 border-transparent hover:border-wedding-gold transition-colors"
                                       />
                                       <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors rounded flex items-center justify-center">
@@ -1404,7 +1411,7 @@ export default function AdminDashboardGrouped() {
                                     className="w-full p-2 border rounded-lg mt-1"
                                   />
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    Foto akan diupload ke album "Official" dengan uploader "Admin". Ukuran maksimal 10MB per file.
+                                    Foto akan diupload ke album &quot;Official&quot; dengan uploader &quot;Admin&quot;. Ukuran maksimal 10MB per file.
                                   </p>
                                 </div>
                                 <div className="flex space-x-2">
@@ -1448,9 +1455,11 @@ export default function AdminDashboardGrouped() {
                                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                         {albumPhotos.map((photo: any) => (
                                           <div key={photo.id} className="relative group">
-                                            <img
+                                            <Image
                                               src={photo.url}
-                                              alt={photo.original_name}
+                                              alt={photo.original_name || 'Event photo'}
+                                              width={96}
+                                              height={96}
                                               className="w-full h-24 object-cover rounded-lg"
                                             />
                                             <div className="absolute bottom-1 left-1 right-1 text-xs text-white bg-black/50 rounded px-1 py-0.5 truncate">

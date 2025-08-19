@@ -3,7 +3,7 @@
 // 🚨 Alert Dashboard Component for HafiPortrait Admin
 // Real-time alert monitoring and management interface
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export function AlertDashboard({ className }: AlertDashboardProps) {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // 🔄 Load alerts and metrics
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -59,7 +59,7 @@ export function AlertDashboard({ className }: AlertDashboardProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeFilter]);
 
   // 🔄 Auto-refresh effect
   useEffect(() => {
@@ -69,7 +69,7 @@ export function AlertDashboard({ className }: AlertDashboardProps) {
       const interval = setInterval(loadData, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [activeFilter, autoRefresh]);
+  }, [activeFilter, autoRefresh, loadData]);
 
   // ✅ Resolve alert
   const handleResolveAlert = async (alertId: string) => {

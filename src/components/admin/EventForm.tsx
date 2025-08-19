@@ -1,6 +1,7 @@
 // file: components/admin/EventForm.tsx
 
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,7 +113,7 @@ export default function EventForm({ editingEvent, onSave, onCancel, isSaving, cr
               </div>
               <div>
                 <h3 className="text-xl font-bold text-green-800">Event Berhasil Dibuat! 🎉</h3>
-                <p className="text-green-700">Event "{createdEvent.name}" siap digunakan</p>
+                <p className="text-green-700">Event &quot;{createdEvent.name}&quot; siap digunakan</p>
               </div>
             </div>
           </CardContent>
@@ -132,9 +133,11 @@ export default function EventForm({ editingEvent, onSave, onCancel, isSaving, cr
               {createdEvent.qr_code ? (
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300 inline-block">
-                    <img 
+                    <Image 
                       src={createdEvent.qr_code} 
                       alt="QR Code Event" 
+                      width={192}
+                      height={192}
                       className="w-48 h-48 mx-auto"
                     />
                   </div>

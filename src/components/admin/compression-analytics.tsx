@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -44,9 +44,9 @@ export function CompressionAnalytics() {
 
   useEffect(() => {
     fetchCompressionStats();
-  }, [timeRange]);
+  }, [timeRange, fetchCompressionStats]);
 
-  const fetchCompressionStats = async () => {
+  const fetchCompressionStats = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/analytics/compression?range=${timeRange}`);
@@ -57,7 +57,7 @@ export function CompressionAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';

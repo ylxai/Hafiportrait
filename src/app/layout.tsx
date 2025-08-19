@@ -1,6 +1,29 @@
 import type { Metadata } from 'next'
+import { Bilbo_Swash_Caps, Fleur_De_Leah, Edu_TAS_Beginner } from 'next/font/google'
 import { Providers } from './providers'
 import './globals.css'
+
+// Configure Google Fonts
+const bilboSwashCaps = Bilbo_Swash_Caps({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bilbo-swash-caps'
+})
+
+const fleurDeLeah = Fleur_De_Leah({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fleur-de-leah'
+})
+
+const eduTasBeginner = Edu_TAS_Beginner({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-edu-tas-beginner'
+})
 import '@/styles/heart-animations.css'
 import '@/styles/color-palette.css'
 import '@/styles/hero-enhancements.css'
@@ -19,20 +42,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning className={`${bilboSwashCaps.variable} ${fleurDeLeah.variable} ${eduTasBeginner.variable}`}>
       <head>
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Bilbo+Swash+Caps&family=Mrs+Saint+Delafield&display=swap" 
-          rel="stylesheet" 
-        />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Bilbo+Swash+Caps&family=Fleur+De+Leah&display=swap" 
-          rel="stylesheet" 
-        />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Bilbo+Swash+Caps&family=Edu+TAS+Beginner:wght@400..700&family=Fleur+De+Leah&display=swap" 
-          rel="stylesheet" 
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
