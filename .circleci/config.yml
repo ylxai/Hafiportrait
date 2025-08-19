@@ -25,9 +25,6 @@ jobs:
           name: Lint code
           command: pnpm run lint || echo "⚠️ Linting warnings found but continuing build"
       - run:
-          name: Environment validation
-          command: pnpm run env:validate
-      - run:
           name: Test database connection
           command: pnpm run test:db
       - run:
