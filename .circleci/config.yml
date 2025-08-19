@@ -9,7 +9,7 @@ jobs:
   # Job untuk testing dan linting
   test:
     docker:
-      - image: cimg/node:18.17
+      - image: cimg/node:20.10
     working_directory: ~/hafiportrait
     steps:
       - checkout
@@ -34,7 +34,7 @@ jobs:
   # Job untuk build aplikasi
   build:
     docker:
-      - image: cimg/node:18.17
+      - image: cimg/node:20.10
     working_directory: ~/hafiportrait
     steps:
       - checkout
