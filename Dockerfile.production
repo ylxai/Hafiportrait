@@ -1,6 +1,14 @@
 # ================================
 # HAFIPORTRAIT PRODUCTION DOCKERFILE
-# Optimized for minimal size & performance
+# ================================
+# PURPOSE: Production-ready Next.js application
+# USAGE: docker-compose up hafiportrait-prod
+# FEATURES:
+#   - Multi-stage build for optimization
+#   - Production environment variables
+#   - Optimized for performance
+#   - Security hardened (non-root user)
+#   - Health checks enabled
 # ================================
 FROM node:20-alpine AS base
 

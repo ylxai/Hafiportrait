@@ -1,6 +1,14 @@
 # ================================
 # HAFIPORTRAIT DEVELOPMENT DOCKERFILE
-# Optimized for fast development & hot reload
+# ================================
+# PURPOSE: Development environment with hot reload
+# USAGE: docker-compose up hafiportrait-dev
+# FEATURES: 
+#   - Hot reload enabled
+#   - Development environment variables
+#   - Optimized for fast development
+#   - Multi-layer cache strategy
+#   - User security (non-root)
 # ================================
 FROM node:20-alpine AS base
 
@@ -13,9 +21,12 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Install pnpm with caching
+# ✅ FIXED: PNPM cache path conflicts
+# ✅ FIXED: All cache paths are user-accessible
+# ✅ FIXED: Consistent cache directory structure
 RUN npm install -g pnpm@latest && \
-    pnpm config set store-dir /app/.pnpm-store
+    pnpm config set store-dir /app/.pnpm-store && \
+    pnpm config set cache-dir /app/.pnpm-cache
 
 # ================================
 # DEPENDENCIES LAYER (Cached)
@@ -25,8 +36,11 @@ FROM base AS deps
 # Copy package files for dependency installation
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install dependencies with cache mount
+# ✅ FIXED: Multi-layer cache strategy for PNPM
+# ✅ FIXED: User-accessible cache paths
+# ✅ FIXED: No root path conflicts
 RUN --mount=type=cache,target=/app/.pnpm-store \
+    --mount=type=cache,target=/app/.pnpm-cache \
     pnpm install --frozen-lockfile
 
 # ================================
@@ -43,11 +57,13 @@ COPY .env.dev.public* ./
 COPY .env.local* ./
 COPY .env.example ./
 
-# Create non-root user for security BEFORE copying files
+# ✅ FIXED: Create user BEFORE copying files
+# ✅ FIXED: Proper ownership for cache directories
+# ✅ FIXED: No permission conflicts
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001 && \
-    mkdir -p /app/.next /app/node_modules && \
-    chown -R nextjs:nodejs /app/.next /app/node_modules
+    mkdir -p /app/.next /app/node_modules /app/.pnpm-store /app/.pnpm-cache && \
+    chown -R nextjs:nodejs /app/.next /app/node_modules /app/.pnpm-store /app/.pnpm-cache
 
 # Copy source code with proper ownership from start
 COPY --chown=nextjs:nodejs . .
