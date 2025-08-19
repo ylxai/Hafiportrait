@@ -189,10 +189,20 @@ workflows:
                 - main
                 - master
       
+      # Deploy to production
+      - deploy:
+          requires:
+            - verify-build
+          filters:
+            branches:
+              only:
+                - main
+                - master
+      
       # Build notification
       - build-notification:
           requires:
-            - verify-build
+            - deploy
           filters:
             branches:
               only:
