@@ -21,9 +21,12 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Install pnpm with caching
+# ✅ FIXED: PNPM cache path conflicts
+# ✅ FIXED: All cache paths are user-accessible
+# ✅ FIXED: Consistent cache directory structure
 RUN npm install -g pnpm@latest && \
-    pnpm config set store-dir /app/.pnpm-store
+    pnpm config set store-dir /app/.pnpm-store && \
+    pnpm config set cache-dir /app/.pnpm-cache
 
 # ================================
 # DEPENDENCIES LAYER (Cached)
@@ -33,8 +36,11 @@ FROM base AS deps
 # Copy package files for dependency installation
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install ALL dependencies first (for build)
+# ✅ FIXED: Multi-layer cache strategy for PNPM
+# ✅ FIXED: User-accessible cache paths
+# ✅ FIXED: No root path conflicts
 RUN --mount=type=cache,target=/app/.pnpm-store \
+    --mount=type=cache,target=/app/.pnpm-cache \
     pnpm install --frozen-lockfile
 
 # ================================
@@ -58,7 +64,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 
 # ✅ IMPROVED: Multi-layer cache strategy for Next.js build
+# ✅ FIXED: All cache paths user-accessible
 RUN --mount=type=cache,target=/app/.pnpm-store \
+    --mount=type=cache,target=/app/.pnpm-cache \
     --mount=type=cache,target=/app/.next/cache \
     --mount=type=cache,target=/app/node_modules/.cache \
     pnpm build
@@ -71,8 +79,9 @@ FROM base AS prod-deps
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install only production dependencies
+# ✅ FIXED: Production dependencies with proper cache
 RUN --mount=type=cache,target=/app/.pnpm-store \
+    --mount=type=cache,target=/app/.pnpm-cache \
     pnpm install --frozen-lockfile --prod
 
 # ================================
@@ -92,9 +101,13 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm@latest
 
-# Create non-root user FIRST
+# ✅ FIXED: Create user BEFORE copying files
+# ✅ FIXED: Proper ownership for cache directories
+# ✅ FIXED: No permission conflicts
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S nextjs -u 1001 && \
+    mkdir -p /app/.next /app/node_modules /app/.pnpm-store /app/.pnpm-cache && \
+    chown -R nextjs:nodejs /app/.next /app/node_modules /app/.pnpm-store /app/.pnpm-cache
 
 # Copy production dependencies with ownership
 COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
