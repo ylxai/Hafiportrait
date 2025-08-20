@@ -228,28 +228,32 @@
 
   .photo-strip-wrapper {
     @apply relative w-full h-48 md:h-64 lg:h-80 overflow-hidden;
-    /* Glassmorphism background */
+    /* Optimized glassmorphism background */
     background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.05) 50%,
-      rgba(255, 255, 255, 0.1) 100%
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.04) 50%,
+      rgba(255, 255, 255, 0.08) 100%
     );
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;
     box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      0 4px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    contain: layout style paint;
   }
 
   .photo-strip {
     @apply flex absolute top-0 h-full;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
   }
 
   .photo-strip-slow {
-    animation: scrollLeft 180s linear infinite;
+    animation: scrollLeft 300s linear infinite;
+    will-change: transform;
   }
 
   .photo-strip-item {
@@ -257,55 +261,55 @@
     width: 320px; /* Even larger width */
     height: calc(100% - 24px); /* Leave margin for glassmorphism effect */
     margin: 12px 16px 12px 0;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+    transition: transform 0.25s ease-out, box-shadow 0.25s ease-out, border-color 0.25s ease-out;
+    will-change: transform;
+    contain: layout style paint;
+    transform: translate3d(0, 0, 0);
     box-shadow: 
-      0 4px 16px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   .photo-strip-item:hover {
-    transform: scale(1.08) translateY(-8px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(12px);
+    transform: translate3d(0, -2px, 0) scale(1.03);
+    border-color: rgba(255, 255, 255, 0.4);
     box-shadow: 
-      0 12px 40px rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
     z-index: 10;
-  }
-
-  /* Glassmorphism accent dots */
-  .photo-strip-item::before,
-  .photo-strip-item::after {
-    content: '';
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 50%;
-    z-index: 1;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .photo-strip-item::before {
-    top: 12px;
-    left: 8px;
-  }
-
-  .photo-strip-item::after {
-    bottom: 12px;
-    right: 8px;
   }
 
   /* Pause animation on hover */
   .photo-strip-container:hover .photo-strip {
     animation-play-state: paused;
+  }
+
+  /* Performance optimization for low-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    .photo-strip-slow {
+      animation: none;
+    }
+    .photo-strip-item {
+      transition: none;
+    }
+    .photo-strip-item:hover {
+      transform: none;
+    }
+  }
+
+  /* Optimize for mobile devices */
+  @media (max-width: 768px) {
+    .photo-strip-slow {
+      animation-duration: 400s; /* Even slower on mobile */
+    }
+    .photo-strip-item {
+      backdrop-filter: none; /* Remove backdrop-filter on mobile */
+      background: rgba(255, 255, 255, 0.12);
+    }
   }
 
   /* Engaging loading animations */
@@ -338,13 +342,13 @@
     }
   }
 
-  /* Photo Strip Animations */
+  /* Photo Strip Animations - Optimized for GPU */
   @keyframes scrollLeft {
     0% {
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
     }
     100% {
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
     }
   }
 
@@ -832,3 +836,4 @@
 @import '../styles/mobile-header-enhancements.css';
 @import '../styles/enhanced-mobile-header.css';
 @import '../styles/admin-mobile-fixes.css';
+/* Force reload Wed Aug 20 00:50:34 UTC 2025 */

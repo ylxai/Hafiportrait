@@ -111,9 +111,12 @@ jobs:
           name: Setup SSH
           command: |
             mkdir -p ~/.ssh
-            echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+            echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
+            chmod 700 ~/.ssh
             ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
+            # Test SSH connection
+            ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "echo 'SSH connection successful'"
       - run:
           name: Deploy to Production Server
           command: |
@@ -178,10 +181,19 @@ workflows:
                 - main
                 - master
       
-      # Deploy to production
-      - deploy:
+      # Deploy to production (MANUAL APPROVAL REQUIRED)
+      - hold-for-production-approval:
+          type: approval
           requires:
             - verify-build
+          filters:
+            branches:
+              only:
+                - main
+                - master
+      - deploy:
+          requires:
+            - hold-for-production-approval
           filters:
             branches:
               only:
