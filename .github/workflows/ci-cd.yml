@@ -213,8 +213,7 @@ jobs:
           
           # Restart PM2 with production environment
           echo "🔄 Restarting PM2 applications..."
-          pm2 restart hafiportrait-app --env production
-          pm2 restart hafiportrait-socketio --env production
+          pm2 restart ecosystem.config.js --env production
           
           # Wait and verify deployment
           echo "⏳ Waiting for applications to start..."
