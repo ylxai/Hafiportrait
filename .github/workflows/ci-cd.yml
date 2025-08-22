@@ -172,8 +172,26 @@ jobs:
         script: |
           cd /home/ubuntu/stable
           
-          # Run deployment script
-          bash scripts/deploy-production.sh main
+          # Pull latest code
+          git fetch origin
+          git checkout main
+          git pull origin main
+          
+          # Load NVM environment
+          if [ -f "$HOME/.nvm/nvm.sh" ]; then
+            source "$HOME/.nvm/nvm.sh"
+            nvm use 20 2>/dev/null || nvm use node 2>/dev/null || true
+          fi
+          
+          # Install dependencies only if changed
+          if git diff HEAD~1 --name-only | grep -q "package.json\|pnpm-lock.yaml"; then
+            echo "📦 Dependencies changed, installing..."
+            pnpm install --frozen-lockfile
+          fi
+          
+          # Restart PM2 with production environment
+          pm2 restart hafiportrait-app --env production
+          pm2 restart hafiportrait-socketio --env production
           
           # Verify deployment
           sleep 5
