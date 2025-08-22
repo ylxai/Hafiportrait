@@ -32,11 +32,6 @@
 - `setup-monitoring.sh` - Monitoring system setup
 - `check-server-resources.js` - Server resource monitoring
 
-### 🐳 `docker/` - Docker Management
-- `docker-manager.sh` - Docker container management
-- `setup-docker-volumes.sh` - Docker volume setup
-- `test-docker-build.sh` - Docker build testing
-- `test-fixed-dockerfiles.sh` - Dockerfile testing
 
 ### 🗄️ `database/` - Database & Storage
 - `add-event-status-columns.sql` - Database schema update
