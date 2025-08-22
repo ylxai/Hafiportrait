@@ -17,7 +17,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
 ```
 
-### 3. Application Configuration
+### 3. Authentication Configuration
+```bash
+JWT_SECRET=<your-secure-jwt-secret-32-chars-minimum>
+SESSION_SECRET=<your-secure-session-secret>
+```
+
+### 4. Application Configuration
 ```bash
 NEXT_PUBLIC_APP_URL=https://hafiportrait.photography
 ```
