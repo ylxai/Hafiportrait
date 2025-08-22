@@ -1,5 +1,7 @@
 version: 2.1
 
+# Optimized CircleCI config for pnpm + PM2 (No Docker)
+
 # Orbs untuk mempermudah konfigurasi
 orbs:
   node: circleci/node@5.1.0
