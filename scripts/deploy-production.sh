@@ -36,11 +36,41 @@ git checkout $BRANCH
 git pull origin $BRANCH
 check_success "Git pull"
 
-# 3. Check if pnpm is available, install if needed
-if ! command -v pnpm &> /dev/null; then
-    echo "📥 Installing pnpm..."
-    npm install -g pnpm
-    check_success "pnpm installation"
+# 3. Setup Node.js environment via NVM
+echo "🔧 Setting up Node.js environment..."
+
+# Load NVM if available
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+    echo "📦 Loading NVM..."
+    source "$HOME/.nvm/nvm.sh"
+    source "$HOME/.nvm/bash_completion" 2>/dev/null || true
+    
+    # Use Node.js (try v20 first, then latest)
+    nvm use 20 2>/dev/null || nvm use node 2>/dev/null || nvm use default 2>/dev/null || true
+    
+    echo "✅ Node.js version: $(node --version)"
+    echo "✅ npm version: $(npm --version)"
+    
+    # Check if pnpm is available
+    if command -v pnpm &> /dev/null; then
+        echo "✅ pnpm version: $(pnpm --version)"
+    else
+        echo "📥 Installing pnpm via npm..."
+        npm install -g pnpm
+        check_success "pnpm installation"
+    fi
+else
+    echo "⚠️  NVM not found, trying direct paths..."
+    # Add common Node.js paths
+    export PATH="/home/ubuntu/.nvm/versions/node/v22.18.0/bin:$PATH"
+    export PATH="/usr/local/bin:$PATH"
+    
+    if command -v node &> /dev/null; then
+        echo "✅ Node.js found: $(node --version)"
+    else
+        echo "❌ Node.js not found in PATH"
+        exit 1
+    fi
 fi
 
 # 4. Install dependencies if package.json changed
