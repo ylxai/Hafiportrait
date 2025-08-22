@@ -3,14 +3,14 @@ module.exports = {
     {
       name: 'hafiportrait-app',
       script: 'pnpm',
-      args: 'start',
+      args: 'dev',
       exec_mode: 'cluster',
       instances: 1,
       autorestart: true,
       watch: false,
       max_memory_restart: '4G',
       env: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'development',
         PORT: 3000,
         HOST: '0.0.0.0'
       },
