@@ -196,6 +196,13 @@ jobs:
             export PATH="/home/ubuntu/.nvm/versions/node/v22.18.0/bin:$PATH"
           fi
           
+          # Ensure PM2 is available
+          if ! command -v pm2 &> /dev/null; then
+            echo "📦 Installing PM2..."
+            npm install -g pm2
+          fi
+          echo "✅ PM2: $(pm2 --version)"
+          
           # Install dependencies only if changed
           if git diff HEAD~1 --name-only | grep -q "package.json\|pnpm-lock.yaml"; then
             echo "📦 Dependencies changed, installing..."
