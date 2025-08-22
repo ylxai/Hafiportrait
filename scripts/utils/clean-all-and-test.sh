@@ -57,7 +57,7 @@ sudo docker builder prune -f
 # 5. Setup volumes
 echo ""
 print_status "📁 Setting up Docker volumes..."
-sudo ./scripts/setup-docker-volumes.sh
+sudo ./scripts/docker/setup-docker-volumes.sh
 
 # 6. Test new Dockerfile.development (Node.js 20)
 echo ""

@@ -172,7 +172,7 @@ module.exports = {
   apps: [
     {
       name: 'hafiportrait-monitoring',
-      script: './scripts/automated-monitoring.js',
+      script: './scripts/monitoring/automated-monitoring.js',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -202,7 +202,7 @@ setup_monitoring_scripts() {
 #!/bin/bash
 echo "🚀 Starting HafiPortrait Monitoring..."
 cd "$(dirname "$0")/../.."
-node scripts/automated-monitoring.js &
+node scripts/monitoring/automated-monitoring.js &
 echo "✅ Monitoring started successfully"
 EOF
     

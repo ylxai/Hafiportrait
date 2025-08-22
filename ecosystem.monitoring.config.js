@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'hafiportrait-monitoring',
-      script: './scripts/automated-monitoring.js',
+      script: './scripts/monitoring/automated-monitoring.js',
       instances: 1,
       autorestart: true,
       watch: false,

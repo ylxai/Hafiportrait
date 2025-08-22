@@ -36,7 +36,7 @@ sudo docker rmi stable_socketio-prod 2>/dev/null && print_success "✅ Removed s
 # 2. Setup volumes
 echo ""
 print_status "📁 Setting up volumes..."
-sudo ./scripts/setup-docker-volumes.sh
+sudo ./scripts/docker/setup-docker-volumes.sh
 
 # 3. Test new production dockerfile
 echo ""
