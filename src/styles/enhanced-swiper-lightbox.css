@@ -7,25 +7,63 @@
 }
 
 /* Enhanced pagination bullets */
-.lightbox-pagination .swiper-pagination-bullet {
-  width: 12px;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.4);
+.lightbox-pagination {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  position: relative !important;
+}
+
+.lightbox-pagination .swiper-pagination-bullet,
+.lightbox-pagination .lightbox-bullet {
+  width: 10px !important;
+  height: 10px !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  opacity: 1 !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  margin: 0 6px !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  position: relative !important;
+}
+
+.lightbox-pagination .swiper-pagination-bullet-active,
+.lightbox-pagination .lightbox-bullet.swiper-pagination-bullet-active {
+  background: rgba(255, 255, 255, 1) !important;
+  border-color: rgba(212, 175, 55, 0.8) !important;
+  transform: scale(1.4) !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 8px rgba(212, 175, 55, 0.4) !important;
+}
+
+.lightbox-pagination .swiper-pagination-bullet:hover,
+.lightbox-pagination .lightbox-bullet:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  transform: scale(1.2) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Enhanced bullet animation */
+.lightbox-pagination .lightbox-bullet::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+}
+
+.lightbox-pagination .lightbox-bullet:hover::before {
   opacity: 1;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border: 2px solid transparent;
-}
-
-.lightbox-pagination .swiper-pagination-bullet-active {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.6);
   transform: scale(1.2);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-}
-
-.lightbox-pagination .swiper-pagination-bullet:hover {
-  background: rgba(255, 255, 255, 0.7);
-  transform: scale(1.1);
 }
 
 /* Smooth zoom container */

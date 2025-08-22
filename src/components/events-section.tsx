@@ -152,27 +152,33 @@ export default function EventsSection() {
   });
 
   return (
-    <section id="events" className="py-16 md:py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 md:mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2"> 
-                Event Terbaru
-              </h2>
-              <p className="text-lg md:text-xl text-gray-600">
-                Lihat event-event terbaru yang telah menggunakan layanan kami
-              </p>
-            </div>
-            {/* Refresh Button */}
+    <section id="events" className="py-16 md:py-20 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300/5 to-purple-300/5 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-12 md:mb-16 relative">
+          {/* Enhanced Header with Better Typography */}
+          <div className="relative">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-4">
+              New Event
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full mb-6"></div>
+            
+            {/* Refresh Button - Repositioned to top-right */}
             <Button
               onClick={handleRefresh}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="ml-4 h-9 w-9 p-0 rounded-full border-wedding-gold/30 hover:border-wedding-gold hover:bg-wedding-gold/10"
               disabled={isRefreshing}
+              className="absolute -top-2 right-0 md:right-4 flex items-center gap-2 hover:bg-blue-50/80 text-blue-600 border border-blue-200/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 rounded-full px-3 py-2"
             >
-              <RefreshCw className={`w-4 h-4 text-wedding-gold ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline text-sm">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
             </Button>
           </div>
         </div>

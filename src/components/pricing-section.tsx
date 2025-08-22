@@ -11,13 +11,34 @@ import { PackageDetails } from "@/lib/whatsapp-integration";
 export default function PricingSection() {
   const [selectedPackage, setSelectedPackage] = useState<PackageDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentPlanIndex, setCurrentPlanIndex] = useState(6); // Start with Wedding Ultimate
+  const [currentPlanIndex, setCurrentPlanIndex] = useState(0); // Start with Wedding Ultimate (first position)
   
   // Touch/Swipe handling
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
   const plans = [
+    {
+      name: "Paket Wedding Ultimate",
+      price: "IDR 6.000.000",
+      originalPrice: "IDR 7.500.000",
+      duration: "2 hari kerja",
+      guests: "400+ tamu",
+      photos: "1500+ foto digital",
+      delivery: "1-2 hari kerja",
+      features: [
+        "2 fotografer & 1 asisten fotografer",
+        "2 hari kerja (akad + resepsi)",
+        "120 cetak foto 5R (pilihan terbaik)",
+        "Album hard cover magnetik premium",
+        "File foto digital tanpa batas",
+        "Softcopy di flashdisk 256GB",
+        "1 cetak besar 16R Jumbo + frame"
+      ],
+      popular: true,
+      badge: "🏆 Best Value",
+      color: "gold"
+    },
     {
       name: "Paket Akad Nikah Basic",
       price: "IDR 1.300.000",
@@ -137,27 +158,6 @@ export default function PricingSection() {
       ],
       badge: "👑 Luxury",
       color: "pink"
-    },
-    {
-      name: "Paket Wedding Ultimate",
-      price: "IDR 6.000.000",
-      originalPrice: "IDR 7.500.000",
-      duration: "2 hari kerja",
-      guests: "400+ tamu",
-      photos: "1500+ foto digital",
-      delivery: "1-2 hari kerja",
-      features: [
-        "2 fotografer & 1 asisten fotografer",
-        "2 hari kerja (akad + resepsi)",
-        "120 cetak foto 5R (pilihan terbaik)",
-        "Album hard cover magnetik premium",
-        "File foto digital tanpa batas",
-        "Softcopy di flashdisk 256GB",
-        "1 cetak besar 16R Jumbo + frame"
-      ],
-      popular: true,
-      badge: "🏆 Best Value",
-      color: "gold"
     }
   ];
 
@@ -265,13 +265,28 @@ export default function PricingSection() {
             </div>
           </div>
           
-          {/* Pricing Slider Container */}
+          {/* Pricing Slider Container with Subtle Previews */}
           <div 
             className="relative max-w-md mx-auto mt-4"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
+            {/* Subtle Side Preview Cards - Mobile Friendly */}
+            <div className="absolute -left-4 top-8 bottom-8 w-8 bg-gradient-to-r from-gray-200/50 to-transparent rounded-l-xl z-10 hidden sm:block">
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 w-0.5 h-16 bg-gray-400/30 rounded-full"></div>
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 rotate-90 whitespace-nowrap">
+                {currentPlanIndex > 0 ? plans[currentPlanIndex - 1].name.split(' ')[0] : plans[plans.length - 1].name.split(' ')[0]}
+              </div>
+            </div>
+            
+            <div className="absolute -right-4 top-8 bottom-8 w-8 bg-gradient-to-l from-gray-200/50 to-transparent rounded-r-xl z-10 hidden sm:block">
+              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-0.5 h-16 bg-gray-400/30 rounded-full"></div>
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 rotate-90 whitespace-nowrap">
+                {currentPlanIndex < plans.length - 1 ? plans[currentPlanIndex + 1].name.split(' ')[0] : plans[0].name.split(' ')[0]}
+              </div>
+            </div>
+            
             <div className="overflow-hidden rounded-2xl">
               <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentPlanIndex * 100}%)` }}>
                 {plans.map((plan, index) => (
@@ -321,19 +336,35 @@ export default function PricingSection() {
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-2xl"></div>
                     
-                    {/* Navigation Dots */}
-                    <div className="flex justify-center mb-4 gap-2 relative z-10">
+                    {/* Enhanced Navigation Dots */}
+                    <div className="flex justify-center mb-6 gap-3 relative z-10">
                       {plans.map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentPlanIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          className={`relative transition-all duration-300 ${
                             index === currentPlanIndex 
-                              ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-150 shadow-lg' 
-                              : 'bg-white/50 hover:bg-white/70 hover:scale-125'
+                              ? 'w-8 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-lg scale-110' 
+                              : 'w-3 h-3 bg-gray-400 hover:bg-gray-600 rounded-full hover:scale-125 shadow-md'
                           }`}
-                        />
+                        >
+                          {/* Active dot glow effect */}
+                          {index === currentPlanIndex && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-sm opacity-60 animate-pulse"></div>
+                          )}
+                          {/* Dot number indicator */}
+                          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white opacity-0 hover:opacity-100 transition-opacity">
+                            {index + 1}
+                          </span>
+                        </button>
                       ))}
+                    </div>
+                    
+                    {/* Plan Counter */}
+                    <div className="text-center mb-4 relative z-10">
+                      <span className="text-xs font-medium text-gray-600 bg-white/80 px-3 py-1 rounded-full shadow-sm">
+                        {currentPlanIndex + 1} of {plans.length}
+                      </span>
                     </div>
                     
                     {/* Price Content */}
@@ -344,22 +375,22 @@ export default function PricingSection() {
                       <div className="text-sm text-gray-600 font-medium">/event</div>
                     </div>
                     
-                    {/* Navigation Arrows */}
+                    {/* Enhanced Navigation Arrows */}
                     <button
                       onClick={() => setCurrentPlanIndex(currentPlanIndex === 0 ? plans.length - 1 : currentPlanIndex - 1)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 z-10"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg border border-white/50 z-10 group"
                     >
-                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      <svg className="w-5 h-5 text-gray-700 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     
                     <button
                       onClick={() => setCurrentPlanIndex(currentPlanIndex === plans.length - 1 ? 0 : currentPlanIndex + 1)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 z-10"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg border border-white/50 z-10 group"
                     >
-                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg className="w-5 h-5 text-gray-700 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
                   </div>
@@ -436,24 +467,6 @@ export default function PricingSection() {
                 </div>
               </div>
               
-              <div className="mt-8 p-6 bg-white rounded-xl border border-gray-200">
-                <p className="text-lg font-semibold text-dynamic-primary mb-2">
-                  💬 Konsultasi Gratis Sekarang!
-                </p>
-                <p className="text-dynamic-secondary mb-4">
-                  Diskusikan kebutuhan event Anda dengan tim kami. Dapatkan rekomendasi paket terbaik dan penawaran khusus.
-                </p>
-                <Button 
-                  onClick={() => {
-                    const whatsappUrl = `https://wa.me/6281234567890?text=${encodeURIComponent('Halo! Saya ingin konsultasi gratis untuk paket photography. Mohon info lengkapnya.')}`;
-                    window.open(whatsappUrl, '_blank');
-                  }}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Konsultasi Gratis via WhatsApp
-                </Button>
-              </div>
             </div>
           </div>
 

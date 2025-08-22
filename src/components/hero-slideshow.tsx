@@ -163,11 +163,13 @@ export default function HeroSlideshow({
       const nextIndex = currentIndex === photos.length - 1 ? 0 : currentIndex + 1;
       if (!preloadedImages.has(nextIndex)) {
         const nextPhoto = photos[nextIndex];
-        const img = new Image();
-        img.src = nextPhoto.optimized_images?.small?.url || nextPhoto.url;
-        img.onload = () => {
-          setPreloadedImages(prev => new Set(Array.from(prev).concat(nextIndex)));
-        };
+        if (nextPhoto) {
+          const img = new Image();
+          img.src = (nextPhoto?.optimized_images && typeof nextPhoto.optimized_images === 'object' && nextPhoto.optimized_images.small?.url) || nextPhoto?.url || '/placeholder-image.svg';
+          img.onload = () => {
+            setPreloadedImages(prev => new Set(Array.from(prev).concat(nextIndex)));
+          };
+        }
       }
     }
   }, [currentIndex, photos, preloadedImages]);
@@ -264,7 +266,24 @@ export default function HeroSlideshow({
     );
   }
 
-  const currentPhoto = photos[currentIndex];
+  const currentPhoto = photos?.[currentIndex];
+
+  // Safety check for currentPhoto
+  if (!currentPhoto) {
+    return (
+      <div className={`relative bg-gradient-to-br from-wedding-ivory to-white flex items-center justify-center ${className}`}>
+        <div className="text-center space-y-4 max-w-2xl mx-auto px-4">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
+            HafiPortrait
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-600 mb-8">
+            Professional Photography Services
+          </p>
+        </div>
+        <FloatingParticles count={3} />
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -275,7 +294,7 @@ export default function HeroSlideshow({
     >
       {/* Background Image - Mobile Optimized */}
       <div className="absolute inset-0">
-        {currentPhoto.optimized_images ? (
+        {currentPhoto?.optimized_images && typeof currentPhoto.optimized_images === 'object' ? (
           <OptimizedImage
             images={currentPhoto.optimized_images}
             alt={currentPhoto.original_name}
@@ -288,8 +307,8 @@ export default function HeroSlideshow({
           />
         ) : (
           <img
-            src={currentPhoto.url}
-            alt={currentPhoto.original_name}
+            src={currentPhoto?.url || currentPhoto?.thumbnail_url || '/placeholder-image.svg'}
+            alt={currentPhoto?.original_name || 'Slideshow Image'}
             className={`w-full h-full object-cover transition-all duration-500 ${
               isTransitioning ? 'opacity-70 scale-105' : 'opacity-100 scale-100'
             }`}

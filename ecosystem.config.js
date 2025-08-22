@@ -19,7 +19,7 @@ module.exports = {
         PORT: 3000,
         HOST: '0.0.0.0'
       },
-      env_file: '.env.local',
+      env_file: '.env.production',
       log_file: './logs/app-combined.log',
       out_file: './logs/app-out.log',
       error_file: './logs/app-error.log',

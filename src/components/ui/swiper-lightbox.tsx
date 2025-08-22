@@ -5,6 +5,7 @@ import { Navigation, Pagination, Zoom, Thumbs, FreeMode, Keyboard, EffectFade, M
 import { useState, useEffect, useRef } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw, Download } from 'lucide-react';
 import { OptimizedImage } from './optimized-image';
+import { DownloadManager } from '@/utils/download-helper';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -38,6 +39,8 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
   const [currentSlide, setCurrentSlide] = useState(currentIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-hide controls after inactivity
@@ -106,7 +109,7 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
   return (
     <div className="fixed inset-0 z-50 enhanced-lightbox-backdrop enhanced-lightbox-container flex flex-col">
       {/* Enhanced Header with controls */}
-      <div className={`absolute top-4 right-4 z-20 flex gap-2 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+      <div className={`absolute top-4 right-4 z-30 flex gap-2 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
         {/* Zoom Controls */}
         <button 
           onClick={() => {
@@ -126,19 +129,84 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
 
         {/* Download Button */}
         <button 
-          onClick={() => {
+          onClick={async () => {
             const currentPhoto = photos[currentSlide];
-            if (currentPhoto) {
-              const link = document.createElement('a');
-              link.href = currentPhoto.url;
-              link.download = currentPhoto.original_name || 'photo.jpg';
-              link.click();
+            if (currentPhoto && !isDownloading) {
+              setIsDownloading(true);
+              setDownloadProgress(0);
+              
+              const downloadUrl = currentPhoto.optimized_images?.original?.url || currentPhoto.url;
+              const filename = currentPhoto.original_name || 'photo.jpg';
+              
+              await DownloadManager.downloadImage({
+                url: downloadUrl,
+                filename,
+                onProgress: (progress) => setDownloadProgress(progress),
+                onSuccess: () => {
+                  setDownloadProgress(100);
+                  setTimeout(() => {
+                    setIsDownloading(false);
+                    setDownloadProgress(0);
+                  }, 1000);
+                },
+                onError: (error) => {
+                  console.error('Download error:', error);
+                  setIsDownloading(false);
+                  setDownloadProgress(0);
+                }
+              });
             }
           }}
-          className="bg-black/60 hover:bg-black/80 text-white p-3 rounded-full transition-all duration-200 hover:scale-110"
-          aria-label="Download image"
+          disabled={isDownloading}
+          className={`relative ${isDownloading ? 'bg-green-600/80' : 'bg-black/60 hover:bg-black/80'} text-white p-3 rounded-full transition-all duration-200 hover:scale-110 disabled:cursor-not-allowed overflow-hidden`}
+          aria-label={isDownloading ? `Downloading... ${downloadProgress}%` : "Download original image"}
+          title={isDownloading ? `Downloading original image... ${downloadProgress}%` : "Download original image"}
         >
-          <Download className="w-5 h-5" />
+          {/* Progress ring background */}
+          {isDownloading && (
+            <div className="absolute inset-0 rounded-full">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 42 42">
+                {/* Background circle */}
+                <circle
+                  className="stroke-current text-white/20"
+                  strokeWidth="3"
+                  fill="none"
+                  cx="21"
+                  cy="21"
+                  r="19"
+                />
+                {/* Progress circle */}
+                <circle
+                  className="stroke-current text-white transition-all duration-500 ease-out"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  fill="none"
+                  cx="21"
+                  cy="21"
+                  r="19"
+                  strokeDasharray={`${(downloadProgress / 100) * 119.38} 119.38`}
+                  style={{
+                    transformOrigin: '21px 21px',
+                  }}
+                />
+              </svg>
+            </div>
+          )}
+          
+          {/* Icon */}
+          <div className="relative z-10">
+            {isDownloading ? (
+              downloadProgress === 100 ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <Download className="w-5 h-5" />
+              )
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+          </div>
         </button>
 
         {/* Close Button */}
@@ -151,11 +219,13 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
         </button>
       </div>
 
-      {/* Photo Info */}
-      <div className={`absolute top-4 left-4 z-20 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-        <div className="bg-black/60 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
-          <p className="text-sm font-medium">{photos[currentSlide]?.original_name}</p>
-          <p className="text-xs text-gray-300">{currentSlide + 1} of {photos.length}</p>
+      {/* Photo Info - Moved to top-left to avoid pagination */}
+      <div className={`absolute top-16 left-4 z-20 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+        <div className="bg-black/70 text-white px-3 py-2 rounded-lg backdrop-blur-sm max-w-xs">
+          <p className="text-sm font-medium truncate">{photos[currentSlide]?.original_name}</p>
+          {photos[currentSlide]?.uploader_name && (
+            <p className="text-xs text-gray-400">by {photos[currentSlide].uploader_name}</p>
+          )}
         </div>
       </div>
 
@@ -164,7 +234,16 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
         <div className="w-full h-full max-w-6xl enhanced-swiper-container">
           <Swiper
             modules={[Navigation, Pagination, Zoom, Thumbs, Keyboard, EffectFade, Mousewheel]}
-            onSwiper={setMainSwiper}
+            onSwiper={(swiper) => {
+              setMainSwiper(swiper);
+              // Ensure pagination is properly initialized
+              setTimeout(() => {
+                if (swiper.pagination && swiper.pagination.render) {
+                  swiper.pagination.render();
+                  swiper.pagination.update();
+                }
+              }, 100);
+            }}
             initialSlide={currentIndex}
             spaceBetween={30}
             slidesPerView={1}
@@ -180,7 +259,11 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
             pagination={{ 
               clickable: true,
               dynamicBullets: true,
-              el: '.lightbox-pagination'
+              dynamicMainBullets: 7,
+              el: '.lightbox-pagination',
+              renderBullet: (index, className) => {
+                return `<span class="${className} lightbox-bullet" data-index="${index}"></span>`;
+              },
             }}
             zoom={{
               maxRatio: 4,
@@ -216,7 +299,7 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
             {photos.map((photo) => (
               <SwiperSlide key={photo.id} className="flex items-center justify-center">
                 <div className="swiper-zoom-container w-full h-full flex items-center justify-center">
-                  {photo.optimized_images ? (
+                  {photo.optimized_images && typeof photo.optimized_images === 'object' ? (
                     <OptimizedImage
                       images={photo.optimized_images}
                       alt={photo.original_name || 'Gallery Photo'}
@@ -225,7 +308,7 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
                     />
                   ) : (
                     <img 
-                      src={photo.url} 
+                      src={photo.url || photo.thumbnail_url || '/placeholder-image.svg'} 
                       alt={photo.original_name || 'Gallery Photo'}
                       className="max-w-full max-h-full object-contain"
                     />
@@ -283,7 +366,7 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
                     ? 'border-white/80 shadow-lg shadow-white/20' 
                     : 'border-transparent hover:border-white/50'
                 }`}>
-                  {photo.optimized_images ? (
+                  {photo.optimized_images && typeof photo.optimized_images === 'object' ? (
                     <OptimizedImage
                       images={photo.optimized_images}
                       alt={photo.original_name || 'Thumbnail'}
@@ -294,7 +377,7 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
                     />
                   ) : (
                     <img 
-                      src={photo.url} 
+                      src={photo.url || photo.thumbnail_url || '/placeholder-image.svg'} 
                       alt={photo.original_name || 'Thumbnail'}
                       className={`w-full h-full object-cover transition-all duration-300 ${
                         index === currentSlide ? 'opacity-100' : 'opacity-60 hover:opacity-90'
@@ -305,20 +388,20 @@ export function SwiperLightbox({ photos, currentIndex, isOpen, onClose }: Swiper
               </SwiperSlide>
             ))}
           </Swiper>
+
         </div>
       )}
 
-      {/* Enhanced Pagination */}
-      <div className={`lightbox-pagination absolute bottom-4 left-1/2 -translate-x-1/2 z-10 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}></div>
+      {/* Enhanced Pagination - Clean without counter */}
+      <div className={`lightbox-pagination absolute bottom-4 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} flex items-center justify-center`}></div>
 
-      {/* Enhanced Instructions */}
-      <div className={`absolute bottom-4 left-4 text-white/70 text-sm hidden md:block transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="bg-black/40 px-3 py-2 rounded-lg backdrop-blur-sm">
-          <p className="flex items-center gap-2">
-            <span className="text-white/90">⌨️</span> Arrow keys • 
-            <span className="text-white/90">🖱️</span> Double-click zoom • 
-            <span className="text-white/90">⎋</span> ESC close •
-            <span className="text-white/90">🖱️</span> Scroll wheel zoom
+      {/* Enhanced Instructions - Moved to bottom-right to avoid conflicts */}
+      <div className={`absolute bottom-4 right-4 text-white/70 text-xs hidden lg:block transition-all duration-300 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="bg-black/50 px-2 py-1 rounded-lg backdrop-blur-sm text-right">
+          <p className="flex items-center gap-1 text-xs">
+            <span>⌨️ Arrow keys</span> • 
+            <span>🖱️ Double-click zoom</span> • 
+            <span>⎋ ESC close</span>
           </p>
         </div>
       </div>

@@ -31,7 +31,7 @@ export function SwiperGallery({ photos, onPhotoClick }: SwiperGalleryProps) {
               className="photo-strip-item"
               onClick={() => onPhotoClick(index % photos.length)}
             >
-              {photo.optimized_images ? (
+              {photo.optimized_images && typeof photo.optimized_images === 'object' ? (
                 <OptimizedImage
                   images={photo.optimized_images}
                   alt={photo.original_name || 'Gallery Photo'}
