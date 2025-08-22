@@ -33,7 +33,7 @@ export default function AccessCodeForm({ selectedAlbum, verifyCodeMutation }: Ac
       </CardHeader>
       <CardContent className={`space-y-4 ${isMobile ? 'mobile-card-content' : ''}`}>
         <p className={`text-gray-600 ${isMobile ? 'text-sm leading-relaxed' : 'text-sm'}`}>
-          Album "{selectedAlbum}" memerlukan kode akses untuk mengupload foto. 
+          Album &quot;{selectedAlbum}&quot; memerlukan kode akses untuk mengupload foto. 
           Dapatkan kode dari penyelenggara acara.
         </p>
         <div className={`flex ${isMobile ? 'gap-3' : 'gap-2'}`}>

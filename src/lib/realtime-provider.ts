@@ -43,14 +43,18 @@ export const useSocketIO = (): boolean => {
 export function useRealtime() {
   const shouldUseSocketIO = useSocketIO();
   
+  // Always call both hooks to satisfy Rules of Hooks
+  const socketIOResult = useSocketIORealtime();
+  const webSocketResult = useWebSocketRealtime();
+  
   if (shouldUseSocketIO) {
     return {
-      ...useSocketIORealtime(),
+      ...socketIOResult,
       provider: 'socket.io' as const
     };
   } else {
     return {
-      ...useWebSocketRealtime(),
+      ...webSocketResult,
       provider: 'websocket' as const
     };
   }
@@ -60,14 +64,18 @@ export function useRealtime() {
 export function useDSLRRealtime() {
   const shouldUseSocketIO = useSocketIO();
   
+  // Always call both hooks to satisfy Rules of Hooks
+  const socketIOResult = useDSLRRealtimeSocketIO();
+  const webSocketResult = useDSLRRealtimeWS();
+  
   if (shouldUseSocketIO) {
     return {
-      ...useDSLRRealtimeSocketIO(),
+      ...socketIOResult,
       provider: 'socket.io' as const
     };
   } else {
     return {
-      ...useDSLRRealtimeWS(),
+      ...webSocketResult,
       provider: 'websocket' as const
     };
   }
@@ -77,14 +85,18 @@ export function useDSLRRealtime() {
 export function useBackupRealtime() {
   const shouldUseSocketIO = useSocketIO();
   
+  // Always call both hooks to satisfy Rules of Hooks
+  const socketIOResult = useBackupRealtimeSocketIO();
+  const webSocketResult = useBackupRealtimeWS();
+  
   if (shouldUseSocketIO) {
     return {
-      ...useBackupRealtimeSocketIO(),
+      ...socketIOResult,
       provider: 'socket.io' as const
     };
   } else {
     return {
-      ...useBackupRealtimeWS(),
+      ...webSocketResult,
       provider: 'websocket' as const
     };
   }
@@ -94,14 +106,18 @@ export function useBackupRealtime() {
 export function useSystemNotifications() {
   const shouldUseSocketIO = useSocketIO();
   
+  // Always call both hooks to satisfy Rules of Hooks
+  const socketIOResult = useSystemNotificationsSocketIO();
+  const webSocketResult = useSystemNotificationsWS();
+  
   if (shouldUseSocketIO) {
     return {
-      ...useSystemNotificationsSocketIO(),
+      ...socketIOResult,
       provider: 'socket.io' as const
     };
   } else {
     return {
-      ...useSystemNotificationsWS(),
+      ...webSocketResult,
       provider: 'websocket' as const
     };
   }
@@ -111,9 +127,12 @@ export function useSystemNotifications() {
 export function useUploadProgress() {
   const shouldUseSocketIO = useSocketIO();
   
+  // Always call the hook to satisfy Rules of Hooks
+  const socketIOResult = useUploadProgressSocketIO();
+  
   if (shouldUseSocketIO) {
     return {
-      ...useUploadProgressSocketIO(),
+      ...socketIOResult,
       provider: 'socket.io' as const
     };
   } else {

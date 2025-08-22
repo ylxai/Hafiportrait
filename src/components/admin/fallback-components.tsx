@@ -313,7 +313,7 @@ export function OfflineModeBanner({
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <WifiOff className="h-4 w-4" />
-          <span className="text-sm font-medium">You're offline</span>
+          <span className="text-sm font-medium">You&apos;re offline</span>
           <span className="text-xs opacity-90">Changes will sync when connection is restored</span>
         </div>
         {onRetryConnection && (
