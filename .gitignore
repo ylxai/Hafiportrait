@@ -310,3 +310,4 @@ deploy-keys/
 deployment-config.json
 production-secrets.json
 .env.circleci
+.next.rollback*
