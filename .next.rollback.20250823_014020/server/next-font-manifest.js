@@ -1,0 +1,1 @@
+self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/home/ubuntu/stable/src/app/layout\":[\"static/media/091dedf14b373291-s.p.woff2\",\"static/media/ae290bf5c593d100-s.p.woff2\",\"static/media/6dc4aa4ca5f293c8-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
