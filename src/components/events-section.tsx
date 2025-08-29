@@ -160,20 +160,7 @@ export default function EventsSection() {
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2"> 
                 Event Terbaru
               </h2>
-              <p className="text-lg md:text-xl text-gray-600">
-                Lihat event-event terbaru yang telah menggunakan layanan kami
-              </p>
             </div>
-            {/* Refresh Button */}
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="ml-4 h-9 w-9 p-0 rounded-full border-wedding-gold/30 hover:border-wedding-gold hover:bg-wedding-gold/10"
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`w-4 h-4 text-wedding-gold ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
           </div>
         </div>
 
@@ -190,7 +177,8 @@ export default function EventsSection() {
               
               {/* Sticky Filter Tabs */}
               <div className="sticky top-16 bg-white/95 backdrop-blur-sm z-20 py-2 -mx-4 px-4">
-                <TabsList className="grid w-full grid-cols-4 h-10 md:h-12 bg-gray-100 rounded-xl p-1">
+                <div className="flex items-center justify-between mb-2">
+                  <TabsList className="grid grid-cols-4 h-10 md:h-12 bg-gray-100 rounded-xl p-1 flex-1 mr-3">
                   <TabsTrigger 
                     value="all" 
                     className="text-xs md:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-wedding-gold transition-all duration-200"
@@ -247,7 +235,19 @@ export default function EventsSection() {
                       )}
                     </span>
                   </TabsTrigger>
-                </TabsList>
+                  </TabsList>
+                  
+                  {/* Refresh Button - Repositioned */}
+                  <Button
+                    onClick={handleRefresh}
+                    variant="outline"
+                    size="sm"
+                    className="h-10 md:h-12 w-10 md:w-12 p-0 rounded-xl border-wedding-gold/30 hover:border-wedding-gold hover:bg-wedding-gold/10 flex-shrink-0"
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw className={`w-4 h-4 text-wedding-gold ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
               </div>
             </div>
           </Tabs>

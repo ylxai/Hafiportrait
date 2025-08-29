@@ -225,22 +225,22 @@ export default function ModernGlassmorphismPricing() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header Section */}
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent mb-4">
-              💰 Paket Harga
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent mb-6 pb-2">
+              Paket Harga
             </h2>
             
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+            <p className="text-base text-gray-600 max-w-2xl mx-auto mb-6">
               Pilih paket yang sesuai dengan kebutuhan event spesial Anda
             </p>
             
             <div className="flex flex-wrap justify-center gap-3 text-sm">
               <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-blue-600" />
-                <span className="text-gray-700">Fotografer Bersertifikat</span>
+                <span className="text-gray-700">Save The moments</span>
               </div>
               <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center gap-2">
                 <Heart className="w-4 h-4 text-red-500" />
-                <span className="text-gray-700">Garansi Kepuasan</span>
+                <span className="text-gray-700">Save be Cost</span>
               </div>
               <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-500" />
