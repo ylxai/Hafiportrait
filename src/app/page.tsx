@@ -71,4 +71,5 @@ export default function HomePage() {
       </ColorPaletteProvider>
     </QueryClientProvider>
   );
-} 
+} // CI/CD test - development hot reload Fri Aug 22 21:10:26 UTC 2025
+// GitHub Actions test - dev workflow 21:15
