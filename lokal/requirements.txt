@@ -1,0 +1,18 @@
+# Enhanced Photo Processing System Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+modal>=0.55.0
+requests>=2.25.0
+pillow>=9.0.0
+python-dotenv>=0.19.0
+boto3>=1.20.0
+watchdog>=2.1.0
+urllib3>=1.26.0
+
+# Optional dependencies
+rawpy>=0.17.0  # For RAW file processing (.CR2, .NEF, .ARW, .DNG)
+
+# Development/Testing (optional)
+# pytest>=6.0.0
+# black>=22.0.0

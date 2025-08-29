@@ -798,6 +798,221 @@ class DatabaseService {
       totalMessages: totalMessages || 0,
     };
   }
+
+  // --- Raw Query Method for Pricing Packages ---
+  async query(sql: string, params?: any[]): Promise<any[]> {
+    try {
+      // For Supabase, we need to use rpc for raw SQL queries
+      // But for pricing packages, let's use the proper Supabase client methods
+      if (sql.includes('pricing_packages')) {
+        if (sql.includes('SELECT') && sql.includes('ORDER BY sort_order')) {
+          // Get all pricing packages
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .select('*')
+            .order('sort_order', { ascending: true })
+            .order('created_at', { ascending: true });
+          
+          if (error) throw error;
+          return data || [];
+        }
+        
+        if (sql.includes('MAX(sort_order)')) {
+          // Get max sort order
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .select('sort_order')
+            .order('sort_order', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+          const maxSortOrder = data?.sort_order || 0;
+          return [{ next_sort_order: maxSortOrder + 1 }];
+        }
+        
+        if (sql.includes('INSERT INTO pricing_packages')) {
+          // Insert new package
+          const [
+            name, price, duration, guests, photos, delivery, 
+            features, badge, is_popular, is_active, sort_order
+          ] = params || [];
+          
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .insert({
+              name,
+              price,
+              duration,
+              guests,
+              photos,
+              delivery,
+              features: typeof features === 'string' ? JSON.parse(features) : features,
+              badge,
+              is_popular,
+              is_active,
+              sort_order
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          return [data];
+        }
+        
+        if (sql.includes('UPDATE pricing_packages') && sql.includes('sort_order')) {
+          // Update sort order
+          const [sort_order, id] = params || [];
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .update({ sort_order, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          return [data];
+        }
+        
+        if (sql.includes('UPDATE pricing_packages')) {
+          // General update
+          const [
+            name, price, duration, guests, photos, delivery,
+            features, badge, is_popular, is_active, id
+          ] = params || [];
+          
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .update({
+              name,
+              price,
+              duration,
+              guests,
+              photos,
+              delivery,
+              features: typeof features === 'string' ? JSON.parse(features) : features,
+              badge,
+              is_popular,
+              is_active,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          return [data];
+        }
+        
+        if (sql.includes('DELETE FROM pricing_packages')) {
+          // Delete package
+          const [id] = params || [];
+          const { data, error } = await this.supabase
+            .from('pricing_packages')
+            .delete()
+            .eq('id', id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          return [data];
+        }
+      }
+      
+      // Fallback for other queries
+      throw new Error(`Unsupported query: ${sql}`);
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
+  // --- Pricing Packages Methods ---
+  async getAllPricingPackages(): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('pricing_packages')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getActivePricingPackages(): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('pricing_packages')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createPricingPackage(packageData: any): Promise<any> {
+    // Get next sort order
+    const { data: maxData, error: maxError } = await this.supabase
+      .from('pricing_packages')
+      .select('sort_order')
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .single();
+    
+    const nextSortOrder = maxData?.sort_order ? maxData.sort_order + 1 : 1;
+    
+    const { data, error } = await this.supabase
+      .from('pricing_packages')
+      .insert({
+        ...packageData,
+        sort_order: nextSortOrder
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async updatePricingPackage(id: string, packageData: any): Promise<any> {
+    const { data, error } = await this.supabase
+      .from('pricing_packages')
+      .update({
+        ...packageData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async deletePricingPackage(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('pricing_packages')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+
+  async togglePricingPackageActive(id: string, is_active: boolean): Promise<any> {
+    const { data, error } = await this.supabase
+      .from('pricing_packages')
+      .update({ 
+        is_active,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
 }
 
 export const database = new DatabaseService(); 

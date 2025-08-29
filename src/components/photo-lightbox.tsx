@@ -20,6 +20,9 @@ interface PhotoLightboxProps {
 export default function PhotoLightbox({ photos, currentIndex, onClose, onDelete, onLike }: PhotoLightboxProps) {
   const [localIndex, setLocalIndex] = useState(currentIndex);
   const [isLiking, setIsLiking] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
   const [floatingHearts, setFloatingHearts] = useState<Array<{ id: number; x: number; y: number }>>([]);
   
@@ -109,12 +112,47 @@ export default function PhotoLightbox({ photos, currentIndex, onClose, onDelete,
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToPrevious, goToNext, onClose]);
 
+  // Auto-hide controls after 3 seconds of inactivity
+  const resetIdleTimer = useCallback(() => {
+    setIsIdle(false);
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+    }
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsIdle(true);
+    }, 3000);
+  }, []);
+
+  // Mouse movement detection
+  useEffect(() => {
+    const handleMouseMove = () => resetIdleTimer();
+    const handleMouseLeave = () => setIsIdle(true);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    
+    // Initial timer
+    resetIdleTimer();
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, [resetIdleTimer]);
+
   // Cleanup on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
         animationTimeoutRef.current = null;
+      }
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+        idleTimeoutRef.current = null;
       }
     };
   }, []);
@@ -123,7 +161,7 @@ export default function PhotoLightbox({ photos, currentIndex, onClose, onDelete,
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] sm:max-w-[90vw] sm:max-h-[90vh] p-0 bg-black border-none flex items-center justify-center">
+      <DialogContent className={`max-w-[95vw] max-h-[95vh] sm:max-w-[90vw] sm:max-h-[90vh] p-0 bg-black border-none flex items-center justify-center lightbox-container ${isIdle ? 'idle' : ''}`}>
         <VisuallyHidden asChild>
           <DialogTitle>Image Viewer</DialogTitle>
         </VisuallyHidden>
@@ -170,95 +208,114 @@ export default function PhotoLightbox({ photos, currentIndex, onClose, onDelete,
             )}
         </div>
 
-        {/* Navigation Buttons - Desktop */}
+        {/* Navigation Buttons - Side (All Devices) */}
         <Button
           variant="ghost"
           size="icon"
-          className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 hover:text-white touch-target gpu-layer"
+          className="auto-hide-controls nav-button absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/40 hover:text-white touch-target gpu-layer"
           onClick={goToPrevious}
         >
-          <ChevronLeft className="h-8 w-8 gpu-layer" />
+          <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8 gpu-layer" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 hover:text-white touch-target gpu-layer"
+          className="auto-hide-controls nav-button absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/40 hover:text-white touch-target gpu-layer"
           onClick={goToNext}
         >
-          <ChevronRight className="h-8 w-8 gpu-layer" />
+          <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8 gpu-layer" />
         </Button>
 
-        {/* Mobile Navigation - Bottom */}
-        <div className="sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 gpu-accelerated">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white bg-black/50 hover:bg-black/70 hover:text-white touch-target gpu-layer"
-            onClick={goToPrevious}
-          >
-            <ChevronLeft className="h-6 w-6 gpu-layer" />
-          </Button>
-          <span className="text-white text-sm bg-black/50 px-3 py-1 rounded gpu-layer">
-            {localIndex + 1} / {photos.length}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white bg-black/50 hover:bg-black/70 hover:text-white touch-target gpu-layer"
-            onClick={goToNext}
-          >
-            <ChevronRight className="h-6 w-6 gpu-layer" />
-          </Button>
-        </div>
 
-        {/* Top Controls */}
-        <div className="absolute top-2 right-2 flex items-center gap-1 sm:gap-2">
+        {/* Minimal Top Controls - Auto Hide */}
+        <div className="auto-hide-controls absolute top-4 right-4 z-10 gpu-accelerated">
+          <div className="flex items-center space-x-2">
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`heart-button text-white bg-black/30 hover:bg-red-500/80 hover:text-white touch-target transition-all duration-200 ${
-                isLiking ? 'liked scale-110 bg-red-500/90' : ''
+              className={`heart-button text-white bg-black/20 hover:bg-red-500/60 hover:text-white touch-target transition-all duration-200 ${
+                isLiking ? 'liked scale-110 bg-red-500/80' : ''
               }`}
               onClick={handleLikeClick}
               disabled={isLiking}
-              title="Like foto ini"
+              title="Like"
             >
-              <Heart className={`heart-icon h-5 w-5 sm:h-6 sm:w-6 transition-all duration-200 ${
+              <Heart className={`heart-icon h-5 w-5 transition-all duration-200 ${
                 isLiking ? 'fill-white scale-125' : ''
               }`} />
             </Button>
-            <a href={currentPhoto.url} download target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="icon" className="text-white bg-black/30 hover:bg-black/50 hover:text-white touch-target">
-                  <Download className="h-5 w-5 sm:h-6 sm:w-6" />
-              </Button>
-            </a>
-            <Button variant="ghost" size="icon" className="text-white bg-black/30 hover:bg-black/50 hover:text-white touch-target" onClick={() => onDelete(currentPhoto.id)}>
-              <Trash className="h-5 w-5 sm:h-6 sm:w-6" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-white bg-black/30 hover:bg-black/50 hover:text-white touch-target" onClick={onClose}>
-                <X className="h-5 w-5 sm:h-6 sm:w-6" /> 
-            </Button>
-        </div>
-
-        {/* Photo Info - Desktop */}
-        <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded">
-          {localIndex + 1} / {photos.length}
-        </div>
-
-        {/* Photo Info - Bottom Left */}
-        <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-3 py-2 rounded space-y-1 gpu-accelerated">
-          {currentPhoto.uploader_name && (
-            <div className="flex items-center gap-2 gpu-layer">
-              <span className="text-xs opacity-80">Oleh:</span>
-              <span className="font-medium">{currentPhoto.uploader_name}</span>
+            
+            {/* Enhanced Download with Quality Indicator */}
+            <div className="relative group">
+              <a 
+                href={currentPhoto.storage_file_id ? `/api/photos/${currentPhoto.id}/original` : currentPhoto.url}
+                download 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title={currentPhoto.storage_file_id ? "Download Original 100%" : "Download Compressed Version"}
+              >
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white bg-black/20 hover:bg-black/40 hover:text-white touch-target relative"
+                >
+                  <Download className="h-5 w-5" />
+                  {/* Honest Quality Badge */}
+                  <span className={`absolute -top-1 -right-1 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center ${
+                    currentPhoto.storage_file_id 
+                      ? 'bg-green-400 text-green-900' 
+                      : 'bg-orange-400 text-orange-900'
+                  }`}>
+                    {currentPhoto.storage_file_id ? '💯' : '⭐'}
+                  </span>
+                </Button>
+              </a>
+              
+              {/* Mobile Quality Tooltip - Honest Communication */}
+              <div className="sm:hidden absolute top-12 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                {currentPhoto.storage_file_id ? 'Original 100%' : 'Compressed'}
+              </div>
             </div>
-          )}
-          <div className="flex items-center gap-2 gpu-layer">
-            <Heart className="h-4 w-4 text-red-400 gpu-layer" />
-            <span className="font-medium">{currentPhoto.likes || 0} likes</span>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white bg-black/20 hover:bg-black/40 hover:text-white touch-target" 
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" /> 
+            </Button>
           </div>
         </div>
+
+        {/* Minimal Bottom Info - Auto Hide */}
+        <div className="auto-hide-controls absolute bottom-4 left-4 gpu-accelerated">
+          <div className="info-panel text-white text-sm bg-black/20 px-3 py-2 rounded">
+            <div className="flex items-center gap-2 gpu-layer">
+              <Heart className="h-4 w-4 text-red-400 gpu-layer" />
+              <span className="font-medium">{currentPhoto.likes || 0}</span>
+              {currentPhoto.uploader_name && currentPhoto.uploader_name !== 'Admin' && (
+                <>
+                  <span className="text-xs opacity-60">•</span>
+                  <span className="text-xs opacity-80">{currentPhoto.uploader_name}</span>
+                </>
+              )}
+              
+              {/* Mobile Quality Indicator - Honest Labels */}
+              <div className="sm:hidden ml-2">
+                <span className={`text-xs px-2 py-1 rounded ${
+                  currentPhoto.storage_file_id 
+                    ? 'bg-green-500/20 text-green-300' 
+                    : 'bg-orange-500/20 text-orange-300'
+                }`}>
+                  {currentPhoto.storage_file_id ? '100%' : 'COMP'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </DialogContent>
     </Dialog>
   );

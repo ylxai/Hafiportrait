@@ -35,6 +35,9 @@ yarn-error.log*
 .env*.local
 .env.local.backup.*
 .env.production
+.env.dev.public
+.env.local
+.env.circleci
 # vercel
 .vercel
 

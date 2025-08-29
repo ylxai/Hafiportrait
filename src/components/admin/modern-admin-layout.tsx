@@ -18,7 +18,8 @@ import {
   Plus,
   Activity,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -168,6 +169,12 @@ export function ModernAdminLayout({
           label: 'Tema & Tampilan',
           icon: Settings,
           action: () => onSectionChange('settings-theme')
+        },
+        {
+          id: 'settings-pricing',
+          label: 'Paket Harga',
+          icon: DollarSign,
+          action: () => onSectionChange('settings-pricing')
         },
         {
           id: 'settings-profile',

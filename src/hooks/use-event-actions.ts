@@ -56,11 +56,8 @@ export function useEventActions(eventId: string) {
 
   // Like photo mutation
   const likePhotoMutation = useMutation({
-    mutationFn: async ({ photoId, currentLikes }: { photoId: string; currentLikes: number }) => {
-      const newLikes = currentLikes + 1;
-      const response = await apiRequest("PATCH", `/api/photos/${photoId}/likes`, {
-        likes: newLikes
-      });
+    mutationFn: async (photoId: string) => {
+      const response = await apiRequest("PATCH", `/api/photos/${photoId}/likes`);
       return response.json();
     },
     onSuccess: () => {

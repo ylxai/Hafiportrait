@@ -23,7 +23,7 @@ const GallerySection = dynamic(() => import("@/components/gallery-section"), {
   loading: () => <div className="h-96 bg-gray-100 animate-pulse" />
 });
 
-const PricingSection = dynamic(() => import("@/components/pricing-section"), {
+const PricingSection = dynamic(() => import("@/components/pricing-section-dynamic"), {
   ssr: false,
   loading: () => <div className="h-96 bg-gray-50 animate-pulse" />
 });

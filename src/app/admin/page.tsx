@@ -24,6 +24,7 @@ import {
   SystemBackupSection,
   SystemNotificationsSection,
   SettingsThemeSection,
+  SettingsPricingSection,
   SettingsProfileSection
 } from "@/components/admin/modern-dashboard-sections";
 
@@ -568,6 +569,8 @@ export default function ModernAdminDashboard() {
         return <SystemNotificationsSection {...sectionProps} />;
       case 'settings-theme':
         return <SettingsThemeSection />;
+      case 'settings-pricing':
+        return <SettingsPricingSection />;
       case 'settings-profile':
         return <SettingsProfileSection user={auth.user} />;
       default:

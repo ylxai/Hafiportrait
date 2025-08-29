@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { id: eventId } = await params;
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File || formData.get('photo') as File;
     const uploaderName = formData.get('uploaderName') as string || 'Anonymous';
     const albumName = formData.get('albumName') as string || 'Tamu';
 
