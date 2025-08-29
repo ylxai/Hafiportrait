@@ -41,6 +41,7 @@ const DSLRMonitor = dynamic(() => import("./dslr-monitor"), { ssr: false });
 const BackupStatusMonitor = dynamic(() => import("./backup-status-monitor").then(mod => ({ default: mod.BackupStatusMonitor })), { ssr: false });
 const SmartNotificationManager = dynamic(() => import("./smart-notification-manager").then(mod => ({ default: mod.SmartNotificationManager })), { ssr: false });
 const ColorPaletteSwitcher = dynamic(() => import("../ui/color-palette-switcher").then(mod => mod.ColorPaletteSwitcher), { ssr: false });
+const PricingPackagesManager = dynamic(() => import("./pricing-packages-manager"), { ssr: false });
 const AlertDashboard = dynamic(() => import("./alert-dashboard").then(mod => ({ default: mod.AlertDashboard })), { ssr: false });
 const RealTimeMonitor = dynamic(() => import("./real-time-monitor").then(mod => ({ default: mod.RealTimeMonitor })), { ssr: false });
 
@@ -972,6 +973,14 @@ export function SettingsProfileSection({ user }: { user: any }) {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+export function SettingsPricingSection() {
+  return (
+    <div className="space-y-6">
+      <PricingPackagesManager />
     </div>
   );
 }

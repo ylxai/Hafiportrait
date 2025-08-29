@@ -74,7 +74,7 @@ class GoogleDriveStorage {
   async loadTokens() {
     try {
       // First try to use refresh token from environment
-      const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+      const refreshToken = this.getRefreshTokenFromFile();
       if (refreshToken) {
         console.log('✅ Using refresh token from environment');
         this.auth.setCredentials({

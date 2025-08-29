@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Providers } from './providers'
 import './globals.css'
+import '@/styles/glassmorphism-pricing.css'
 import '@/styles/heart-animations.css'
 import '@/styles/color-palette.css'
 import '@/styles/hero-enhancements.css'

@@ -84,13 +84,7 @@ export default function EventPage() {
   };
 
   const handleLikePhoto = (photoId: string) => {
-    const currentPhoto = photos.find(p => p.id === photoId);
-    if (currentPhoto) {
-      likePhotoMutation.mutate({ 
-        photoId, 
-        currentLikes: currentPhoto.likes || 0 
-      });
-    }
+    likePhotoMutation.mutate(photoId);
   };
 
   const handleDeletePhoto = (photoId: string) => {

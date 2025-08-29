@@ -148,10 +148,10 @@ export class ImageOptimizerServer {
 
       // Define sizes
       const sizes = {
-        thumbnail: { width: 300, height: 225, quality: 85 },
+        thumbnail: { width: 300, height: 225, quality: 75 },
         small: { width: 800, height: 600, quality: 90 },
-        medium: { width: 1200, height: 900, quality: 92 },
-        large: { width: 1920, height: 1440, quality: 95 }
+        medium: { width: 1200, height: 900, quality: 95 },
+        large: { width: 1920, height: 1440, quality: 100 }
       };
 
       // Upload original

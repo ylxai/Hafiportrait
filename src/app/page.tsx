@@ -23,9 +23,9 @@ const GallerySection = dynamic(() => import("@/components/gallery-section"), {
   loading: () => <div className="h-96 bg-gray-100 animate-pulse" />
 });
 
-const PricingSection = dynamic(() => import("@/components/pricing-section"), {
+const PricingSection = dynamic(() => import("@/components/pricing-section-glassmorphism"), {
   ssr: false,
-  loading: () => <div className="h-96 bg-gray-50 animate-pulse" />
+  loading: () => <div className="h-96 bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 animate-pulse" />
 });
 
 const ContactSection = dynamic(() => import("@/components/contact-section"), {
