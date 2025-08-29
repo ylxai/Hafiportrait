@@ -233,18 +233,21 @@ export default function ModernGlassmorphismPricing() {
               Pilih paket yang sesuai dengan kebutuhan event spesial Anda
             </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm max-w-lg mx-auto">
-              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center justify-center gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-sm max-w-lg mx-auto">
+              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-3 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2">
                 <Camera className="w-4 h-4 text-blue-600" />
-                <span className="text-gray-700">Save The moments</span>
+                <span className="text-gray-700 hidden sm:inline">Save The moments</span>
+                <span className="text-gray-700 text-xs sm:hidden">Moments</span>
               </div>
-              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center justify-center gap-2">
+              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-3 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2">
                 <Heart className="w-4 h-4 text-red-500" />
-                <span className="text-gray-700">Save be Cost</span>
+                <span className="text-gray-700 hidden sm:inline">Save be Cost</span>
+                <span className="text-gray-700 text-xs sm:hidden">Cost</span>
               </div>
-              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-4 py-2 flex items-center justify-center gap-2">
+              <div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-full px-3 sm:px-4 py-2 flex items-center justify-center gap-1 sm:gap-2">
                 <Star className="w-4 h-4 text-yellow-500" />
-                <span className="text-gray-700">Rating 4.9/5</span>
+                <span className="text-gray-700 hidden sm:inline">Rating 4.9/5</span>
+                <span className="text-gray-700 text-xs sm:hidden">4.9★</span>
               </div>
             </div>
           </div>
